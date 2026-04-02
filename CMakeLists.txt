@@ -27,6 +27,7 @@ qt_add_executable(WarGame
     pages/teamconfigdialog.cpp
     pages/teamconfigdialog.ui
     resources.qrc
+    pages/battlepage.h pages/battlepage.cpp pages/battlepage.ui
 )
 
 target_link_libraries(WarGame

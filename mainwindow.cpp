@@ -1,37 +1,53 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+
 #include "pages/menupage.h"
 #include "pages/configpage.h"
+#include "pages/battlepage.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , menuPage(new MenuPage(this))
+    , configPage(new ConfigPage(this))
+    , battlePage(new BattlePage(this))
 {
     ui->setupUi(this);
 
-    auto *menu = new MenuPage(this);
-    auto *config = new ConfigPage(this);
+    ui->stackedWidget->addWidget(menuPage);
+    ui->stackedWidget->addWidget(configPage);
+    ui->stackedWidget->addWidget(battlePage);
 
-    ui->stackedWidget->addWidget(menu);    // index 0
-    ui->stackedWidget->addWidget(config);  // index 1
+    ui->stackedWidget->setCurrentWidget(menuPage);
 
-    ui->stackedWidget->setCurrentIndex(0);
+    connect(menuPage, &MenuPage::playClicked, this, [this]()
+            {
+                ui->stackedWidget->setCurrentWidget(configPage);
+            });
 
-    connect(menu, &MenuPage::playClicked, this, [this]() {
-        ui->stackedWidget->setCurrentIndex(1);
-    });
+    connect(menuPage, &MenuPage::exitClicked, this, [this]()
+            {
+                close();
+            });
 
-    connect(config, &ConfigPage::backClicked, this, [this]() {
-        ui->stackedWidget->setCurrentIndex(0);
-    });
+    connect(configPage, &ConfigPage::backClicked, this, [this]()
+            {
+                ui->stackedWidget->setCurrentWidget(menuPage);
+            });
 
-    connect(menu, &MenuPage::exitClicked, this, [this]() {
-        close();
-    });
+    connect(configPage, &ConfigPage::startClicked, this, [this](const GameConfig& config)
+            {
+                battlePage->setConfiguration(config);
+                ui->stackedWidget->setCurrentWidget(battlePage);
+            });
+
+    connect(battlePage, &BattlePage::backToMenuClicked, this, [this]()
+            {
+                ui->stackedWidget->setCurrentWidget(menuPage);
+            });
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
-

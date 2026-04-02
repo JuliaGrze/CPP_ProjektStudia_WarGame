@@ -9,6 +9,10 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+class MenuPage;
+class ConfigPage;
+class BattlePage;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -19,5 +23,10 @@ public:
 
 private:
     Ui::MainWindow *ui;
+
+    MenuPage *menuPage;
+    ConfigPage *configPage;
+    BattlePage *battlePage;
 };
+
 #endif // MAINWINDOW_H
