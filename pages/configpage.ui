@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ConfigPage</class>
+ <widget class="QWidget" name="ConfigPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>956</width>
+    <height>622</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget#ConfigPage {
+    background-color: #1e1f26;
+}
+
+QWidget#mainPanel {
+    background-color: #2a2c36;
+    border: 1px solid #3a3d4a;
+    border-radius: 18px;
+}
+
+QLabel#labelTitle {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: bold;
+    padding: 12px 0 18px 0;
+    background: transparent;
+    border: none;
+}
+
+QWidget#mapSection,
+QWidget#sizeSection,
+QWidget#playerSection,
+QWidget#enemySection {
+    background-color: #242631;
+    border: 1px solid #3a3d4a;
+    border-radius: 14px;
+}
+
+QLabel {
+    color: #dfe6ee;
+    font-size: 15px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+}
+
+QLabel#labelPlayerTeamSummary,
+QLabel#labelEnemyTeamSummary {
+    color: #bfc7d5;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 6px 0 6px 0;
+}
+
+QComboBox {
+    background-color: #f4f7fb;
+    color: #1e1f26;
+    border: 2px solid #d0d7e2;
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-height: 22px;
+    font-size: 14px;
+}
+
+QComboBox:hover {
+    border: 2px solid #2f80ed;
+}
+
+QPushButton {
+    background-color: #2f80ed;
+    color: white;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    min-height: 44px;
+}
+
+QPushButton:hover {
+    background-color: #3c94ff;
+}
+
+QPushButton:pressed {
+    background-color: #256fd1;
+}
+
+QPushButton#btnBackToMenu {
+    background-color: #6c757d;
+}
+
+QPushButton#btnBackToMenu:hover {
+    background-color: #7b848c;
+}
+
+QPushButton#btnBackToMenu:pressed {
+    background-color: #5c646b;
+}
+
+QPushButton#btnStart {
+    min-height: 50px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+QComboBox {
+    background-color: #f4f7fb;
+    color: #1e1f26;
+    border: 2px solid #d0d7e2;
+    border-radius: 10px;
+    padding: 8px 36px 8px 12px;
+    min-height: 22px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+QComboBox:hover {
+    border: 2px solid #2f80ed;
+}
+
+QComboBox:focus {
+    border: 2px solid #2f80ed;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 28px;
+    border: none;
+    background-color: transparent;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/arrow_down.svg);
+    width: 15px;
+    height: 15px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #2a2c36;
+    color: #ffffff;
+    border: 1px solid #3a3d4a;
+    border-radius: 10px;
+    padding: 6px;
+    outline: 0px;
+    selection-background-color: #2f80ed;
+    selection-color: #ffffff;
+    font-size: 14px;
+}
+
+QComboBox QAbstractItemView::item {
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: transparent;
+}
+
+QComboBox QAbstractItemView::item:selected {
+    background-color: #2f80ed;
+    color: white;
+}
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: #3a3d4a;
+    color: white;
+}</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_9">
+   <property name="leftMargin">
+    <number>30</number>
+   </property>
+   <property name="topMargin">
+    <number>30</number>
+   </property>
+   <property name="rightMargin">
+    <number>30</number>
+   </property>
+   <property name="bottomMargin">
+    <number>30</number>
+   </property>
+   <item>
+    <spacer name="verticalSpacerTop">
+     <property name="orientation">
+      <enum>Qt::Orientation::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>18</number>
+     </property>
+     <property name="leftMargin">
+      <number>24</number>
+     </property>
+     <property name="topMargin">
+      <number>24</number>
+     </property>
+     <property name="rightMargin">
+      <number>24</number>
+     </property>
+     <property name="bottomMargin">
+      <number>24</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="labelTitle">
+       <property name="text">
+        <string>KONFIGURACJA ROZGRYWKI</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QGridLayout" name="gridLayout">
+       <property name="spacing">
+        <number>16</number>
+       </property>
+       <item row="0" column="0">
+        <layout class="QVBoxLayout" name="verticalLayoutMapSection">
+         <property name="spacing">
+          <number>10</number>
+         </property>
+         <property name="leftMargin">
+          <number>16</number>
+         </property>
+         <property name="topMargin">
+          <number>16</number>
+         </property>
+         <property name="rightMargin">
+          <number>16</number>
+         </property>
+         <property name="bottomMargin">
+          <number>16</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="labelMap">
+           <property name="text">
+            <string>Mapa</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="cmbMap"/>
+         </item>
+        </layout>
+       </item>
+       <item row="0" column="1">
+        <layout class="QVBoxLayout" name="verticalLayoutSizeSection">
+         <property name="spacing">
+          <number>10</number>
+         </property>
+         <property name="leftMargin">
+          <number>16</number>
+         </property>
+         <property name="topMargin">
+          <number>16</number>
+         </property>
+         <property name="rightMargin">
+          <number>16</number>
+         </property>
+         <property name="bottomMargin">
+          <number>16</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="labelMapSize">
+           <property name="text">
+            <string>Rozmiar mapy</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="cmbMapSize"/>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="0">
+        <layout class="QVBoxLayout" name="verticalLayoutPlayerSection">
+         <property name="spacing">
+          <number>10</number>
+         </property>
+         <property name="leftMargin">
+          <number>16</number>
+         </property>
+         <property name="topMargin">
+          <number>16</number>
+         </property>
+         <property name="rightMargin">
+          <number>16</number>
+         </property>
+         <property name="bottomMargin">
+          <number>16</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="labelPlayerTeam">
+           <property name="text">
+            <string>Twoja drużyna</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="labelPlayerTeamSummary">
+           <property name="text">
+            <string>Brak jednostek</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnPlayerTeamConfig">
+           <property name="text">
+            <string>Edytuj skład</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="1">
+        <layout class="QVBoxLayout" name="verticalLayoutEnemySection">
+         <property name="spacing">
+          <number>10</number>
+         </property>
+         <property name="leftMargin">
+          <number>16</number>
+         </property>
+         <property name="topMargin">
+          <number>16</number>
+         </property>
+         <property name="rightMargin">
+          <number>16</number>
+         </property>
+         <property name="bottomMargin">
+          <number>16</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="labelEnemyTeam">
+           <property name="text">
+            <string>Drużyna przeciwna</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="labelEnemyTeamSummary">
+           <property name="text">
+            <string>Brak jednostek</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnEnemyTeamConfig">
+           <property name="text">
+            <string>Edytuj skład</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="buttonsLayout">
+       <property name="spacing">
+        <number>14</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="btnBackToMenu">
+         <property name="text">
+          <string>Wróć</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnStart">
+         <property name="text">
+          <string>START BITWY</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacerBottom">
+     <property name="orientation">
+      <enum>Qt::Orientation::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

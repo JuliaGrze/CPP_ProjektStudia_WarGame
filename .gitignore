@@ -1,0 +1,35 @@
+# ===== Build =====
+/build/
+build*/
+cmake-build-*/
+
+# ===== Qt Creator =====
+*.user
+*.user.*
+*.autosave
+*.creator
+*.creator.user
+*.creator.user.*
+
+# ===== CMake =====
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# ===== System =====
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+*.log
+
+# ===== Temporary =====
+*.tmp
+*.temp
+
+.vscode/
+
+# ===== Windows =====
+*.exe
+*.dll

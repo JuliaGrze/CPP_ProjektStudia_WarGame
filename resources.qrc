@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="arrow_up.svg">images/arrow_circle_up.svg</file>
+        <file alias="arrow_down.svg">images/arrow_circle_down.svg</file>
+    </qresource>
+</RCC>

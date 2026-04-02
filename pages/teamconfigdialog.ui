@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TeamConfigDialog</class>
+ <widget class="QDialog" name="TeamConfigDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>420</width>
+    <height>447</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Konfiguracja drużyny</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QDialog {
+    background-color: #1e1f26;
+}
+
+QWidget#mainPanel {
+    background-color: #2a2c36;
+    border: 1px solid #3a3d4a;
+    border-radius: 18px;
+}
+
+QWidget#formSection,
+QWidget#summarySection {
+    background-color: #242631;
+    border: 1px solid #3a3d4a;
+    border-radius: 14px;
+}
+
+QLabel {
+    color: #dfe6ee;
+    font-size: 15px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+}
+
+QLabel#titleLabel {
+    color: #ffffff;
+    font-size: 26px;
+    font-weight: bold;
+    padding: 8px 0 10px 0;
+    qproperty-alignment: AlignCenter;
+}
+
+QLabel#subtitleLabel {
+    color: #bfc7d5;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0 0 4px 0;
+    qproperty-alignment: AlignCenter;
+}
+
+QLabel#totalLabel {
+    color: #bfc7d5;
+    font-size: 16px;
+    font-weight: bold;
+    qproperty-alignment: AlignCenter;
+}
+
+QSpinBox {
+    background-color: #f4f7fb;
+    color: #1e1f26;
+    border: 2px solid #d0d7e2;
+    border-radius: 10px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 10px;
+    padding-right: 28px;
+    min-height: 24px;
+    min-width: 140px;
+    font-size: 14px;
+}
+
+QSpinBox:hover {
+    border: 2px solid #2f80ed;
+}
+
+QSpinBox:focus {
+    border: 2px solid #2f80ed;
+}
+
+QSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    width: 22px;
+    background-color: #eef3f9;
+    border-left: 1px solid #d0d7e2;
+    border-top-right-radius: 8px;
+}
+
+QSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    width: 22px;
+    background-color: #eef3f9;
+    border-left: 1px solid #d0d7e2;
+    border-top: 1px solid #d0d7e2;
+    border-bottom-right-radius: 8px;
+}
+
+QSpinBox::up-button:hover,
+QSpinBox::down-button:hover {
+    background-color: #dfe9f7;
+}
+
+QSpinBox::up-button:pressed,
+QSpinBox::down-button:pressed {
+    background-color: #cfdced;
+}
+
+QSpinBox::up-arrow,
+QSpinBox::down-arrow {
+    width: 10px;
+    height: 10px;
+}
+
+QPushButton {
+    background-color: #2f80ed;
+    color: white;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    min-height: 44px;
+}
+
+QPushButton:hover {
+    background-color: #3c94ff;
+}
+
+QPushButton:pressed {
+    background-color: #256fd1;
+}
+
+QPushButton#cancelButton {
+    background-color: #6c757d;
+}
+
+QPushButton#cancelButton:hover {
+    background-color: #7b848c;
+}
+
+QPushButton#cancelButton:pressed {
+    background-color: #5c646b;
+}
+
+QSpinBox::up-arrow {
+	image: url(:/icons/arrow_up.svg);
+    width: 15px;
+    height: 15px;
+}
+
+QSpinBox::down-arrow {
+	image:  url(:/icons/arrow_down.svg);
+    width: 15px;
+    height: 15px;
+}</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>16</number>
+   </property>
+   <property name="leftMargin">
+    <number>20</number>
+   </property>
+   <property name="topMargin">
+    <number>20</number>
+   </property>
+   <property name="rightMargin">
+    <number>20</number>
+   </property>
+   <property name="bottomMargin">
+    <number>20</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="titleLabel">
+     <property name="text">
+      <string>Konfiguracja drużyny</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <property name="horizontalSpacing">
+      <number>14</number>
+     </property>
+     <property name="verticalSpacing">
+      <number>12</number>
+     </property>
+     <item row="0" column="0">
+      <widget class="QLabel" name="infantryLabel">
+       <property name="text">
+        <string>Piechota:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QSpinBox" name="infantrySpinBox">
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::ButtonSymbols::UpDownArrows</enum>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>20</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="tankLabel">
+       <property name="text">
+        <string>Czołg:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QSpinBox" name="tankSpinBox">
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::ButtonSymbols::UpDownArrows</enum>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>20</number>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="artilleryLabel">
+       <property name="text">
+        <string>Artyleria:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="artillerySpinBox">
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::ButtonSymbols::UpDownArrows</enum>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>20</number>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="medicLabel">
+       <property name="text">
+        <string>Medyk:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QSpinBox" name="medicSpinBox">
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::ButtonSymbols::UpDownArrows</enum>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>20</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="totalLabel">
+     <property name="text">
+      <string>Łącznie jednostek: 0</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="buttonsLayout">
+     <property name="spacing">
+      <number>12</number>
+     </property>
+     <item>
+      <widget class="QPushButton" name="cancelButton">
+       <property name="text">
+        <string>Anuluj</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="saveButton">
+       <property name="text">
+        <string>Zapisz</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
