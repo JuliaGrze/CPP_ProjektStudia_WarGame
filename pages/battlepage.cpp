@@ -4,7 +4,10 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include <QLayoutItem>
+#include <QIcon>
 #include <QString>
+#include <QSize>
+#include <QTimer>
 
 BattlePage::BattlePage(QWidget *parent)
     : QWidget(parent)
@@ -15,9 +18,13 @@ BattlePage::BattlePage(QWidget *parent)
     connect(ui->btnBackToMenu, &QPushButton::clicked,
             this, &BattlePage::backToMenuClicked);
 
-    drawBoard();
     updateTurnInfo();
     refreshStatistics();
+
+    QTimer::singleShot(0, this, [this]()
+                       {
+                           drawBoard();
+                       });
 }
 
 BattlePage::~BattlePage()
@@ -28,16 +35,40 @@ BattlePage::~BattlePage()
 void BattlePage::setConfiguration(const GameConfig& config)
 {
     m_config = config;
-    drawBoard();
     updateTurnInfo();
     refreshStatistics();
 }
 
 void BattlePage::drawBoard()
 {
+    if (m_isDrawingBoard)
+        return;
+
     auto *grid = ui->gridLayout_2;
     if (!grid)
         return;
+
+    int boardSize = m_config.mapSize;
+
+    // Obsługujemy tylko 10x10, 15x15 i 20x20
+    if (boardSize != 10 && boardSize != 15 && boardSize != 20)
+        boardSize = 10;
+
+    int availableWidth = ui->boardContainer->width();
+    int availableHeight = ui->boardContainer->height();
+
+    // jeśli kontener jeszcze nie jest gotowy, nie rysujemy
+    if (availableWidth < 50 || availableHeight < 50)
+        return;
+
+    int boardPixelSize = qMin(availableWidth, availableHeight);
+    int tileSize = boardPixelSize / boardSize;
+
+    // zabezpieczenie przed zbyt małymi polami
+    if (tileSize < 12)
+        return;
+
+    m_isDrawingBoard = true;
 
     while (QLayoutItem *item = grid->takeAt(0))
     {
@@ -46,98 +77,104 @@ void BattlePage::drawBoard()
         delete item;
     }
 
-    int boardSize = 8;
+    grid->setSpacing(0);
 
-    if (m_config.mapSize > 0)
-        boardSize = m_config.mapSize;
+    int totalBoardSize = tileSize * boardSize;
+    int horizontalMargin = (availableWidth - totalBoardSize) / 2;
+    int verticalMargin = (availableHeight - totalBoardSize) / 2;
 
-    if (boardSize < 6)
-        boardSize = 6;
+    if (horizontalMargin < 0)
+        horizontalMargin = 0;
 
-    if (boardSize > 12)
-        boardSize = 12;
+    if (verticalMargin < 0)
+        verticalMargin = 0;
 
-    grid->setSpacing(2);
-    grid->setContentsMargins(8, 8, 8, 8);
-
-    int tileSize = 42;
-    if (boardSize >= 10)
-        tileSize = 34;
-    if (boardSize >= 12)
-        tileSize = 28;
+    grid->setContentsMargins(horizontalMargin, verticalMargin,
+                             horizontalMargin, verticalMargin);
 
     for (int row = 0; row < boardSize; ++row)
     {
         for (int col = 0; col < boardSize; ++col)
         {
-            auto *tile = new QPushButton(this);
+            auto *tile = new QPushButton(ui->boardContainer);
             tile->setFixedSize(tileSize, tileSize);
             tile->setFocusPolicy(Qt::NoFocus);
+            tile->setText("");
+            tile->setIcon(QIcon());
+
+            QString terrainPath = ":/icons/images/terrain/grass.png";
+            QString unitPath;
+
+            // ===== TEREN =====
+            if ((row == 1 && col == 3) ||
+                (row == boardSize / 2 && col == boardSize / 2) ||
+                (row == boardSize - 4 && col == boardSize / 2 + 1))
+            {
+                terrainPath = ":/icons/images/terrain/forest.png";
+            }
+
+            if (row == 2 && col == 2)
+            {
+                terrainPath = ":/icons/images/terrain/mountain.png";
+            }
+
+            if ((row == 0 && col == boardSize / 2) ||
+                (row == boardSize - 5 && col == 1))
+            {
+                terrainPath = ":/icons/images/terrain/ocean.png";
+            }
+
+            // ===== JEDNOSTKI NIEBIESKIE =====
+            if (row == 0 && col == 1)
+                unitPath = ":/icons/images/units/soldier_blue.png";
+
+            if (row == 1 && col == 2)
+                unitPath = ":/icons/images/units/tank_blue.png";
+
+            if (row == 3 && col == 0)
+                unitPath = ":/icons/images/units/medic_blue.png";
+
+            // ===== JEDNOSTKI CZERWONE =====
+            if (row == 1 && col == boardSize - 2)
+                unitPath = ":/icons/images/units/soldier_red.png";
+
+            if (row == 3 && col == boardSize - 2)
+                unitPath = ":/icons/images/units/tank_red.png";
+
+            if (row == boardSize - 2 && col == 3)
+                unitPath = ":/icons/images/units/medic_red.png";
 
             QString style =
                 "QPushButton {"
-                "background-color: #0f172a;"
-                "border: 1px solid #e5e7eb;"
-                "color: white;"
-                "font-weight: bold;"
+                "background-color: #1f2937;"
+                "border: 1px solid #dfe6ee;"
                 "padding: 0px;"
+                "margin: 0px;"
                 "}";
 
-            QString text;
-
-            // przykładowe jednostki niebieskie
-            if ((row == 0 && col == 1) ||
-                (row == 1 && col == 2) ||
-                (row == 3 && col == 0))
+            if (unitPath.isEmpty())
             {
-                text = "B";
-                style =
-                    "QPushButton {"
-                    "background-color: #1d4ed8;"
-                    "border: 1px solid #e5e7eb;"
-                    "color: white;"
-                    "font-weight: bold;"
-                    "padding: 0px;"
-                    "}";
+                style = QString(
+                            "QPushButton {"
+                            "border-image: url(%1) 0 0 0 0 stretch stretch;"
+                            "border: 1px solid #dfe6ee;"
+                            "padding: 0px;"
+                            "margin: 0px;"
+                            "}"
+                            ).arg(terrainPath);
+            }
+            else
+            {
+                tile->setIcon(QIcon(unitPath));
+                tile->setIconSize(QSize(tileSize - 10, tileSize - 10));
             }
 
-            // przykładowe jednostki czerwone
-            if ((row == 1 && col == boardSize - 2) ||
-                (row == 3 && col == boardSize - 2) ||
-                (row == boardSize - 2 && col == 3))
-            {
-                text = "C";
-                style =
-                    "QPushButton {"
-                    "background-color: #b91c1c;"
-                    "border: 1px solid #e5e7eb;"
-                    "color: white;"
-                    "font-weight: bold;"
-                    "padding: 0px;"
-                    "}";
-            }
-
-            // przykładowe przeszkody / teren
-            if ((row == 1 && col == 3) ||
-                (row == 4 && col == 5))
-            {
-                text = "";
-                style =
-                    "QPushButton {"
-                    "background-color: #4d7c0f;"
-                    "border: 1px solid #e5e7eb;"
-                    "color: white;"
-                    "font-weight: bold;"
-                    "padding: 0px;"
-                    "}";
-            }
-
-            tile->setText(text);
             tile->setStyleSheet(style);
-
             grid->addWidget(tile, row, col);
         }
     }
+
+    m_isDrawingBoard = false;
 }
 
 void BattlePage::updateTurnInfo()
@@ -147,8 +184,14 @@ void BattlePage::updateTurnInfo()
 
 void BattlePage::refreshStatistics()
 {
-    ui->labelUnitName->setText("Piechota");
+    ui->labelUnitName->setText("Żołnierz");
     ui->labelUnitStats->setText("HP: 100\nAtak: 20\nZasięg: 2\nRuch: 3");
     ui->labelBattleLog->setText("Rozpoczęcie bitwy.\nNiebiescy wykonują pierwszy ruch.");
     ui->labelTeamsInfo->setText("Niebiescy: 3 | Czerwoni: 3");
+}
+
+void BattlePage::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    drawBoard();
 }

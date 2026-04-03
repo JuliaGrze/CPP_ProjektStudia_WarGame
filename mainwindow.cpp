@@ -1,9 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
 #include "pages/menupage.h"
 #include "pages/configpage.h"
 #include "pages/battlepage.h"
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -13,6 +13,9 @@ MainWindow::MainWindow(QWidget *parent)
     , battlePage(new BattlePage(this))
 {
     ui->setupUi(this);
+
+    // minimalny rozmiar okna
+    setMinimumSize(1100, 900);
 
     ui->stackedWidget->addWidget(menuPage);
     ui->stackedWidget->addWidget(configPage);
@@ -39,7 +42,12 @@ MainWindow::MainWindow(QWidget *parent)
             {
                 battlePage->setConfiguration(config);
                 ui->stackedWidget->setCurrentWidget(battlePage);
-            });
+
+                QTimer::singleShot(0, battlePage, [this]()
+                                   {
+                                       battlePage->drawBoard();
+                                   });
+            });;
 
     connect(battlePage, &BattlePage::backToMenuClicked, this, [this]()
             {

@@ -2,6 +2,7 @@
 #define BATTLEPAGE_H
 
 #include <QWidget>
+#include <QResizeEvent>
 #include "../config/gameconfig.h"
 
 namespace Ui {
@@ -24,9 +25,13 @@ public:
 signals:
     void backToMenuClicked();
 
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
 private:
     Ui::BattlePage *ui;
     GameConfig m_config;
+    bool m_isDrawingBoard = false;
 };
 
 #endif // BATTLEPAGE_H

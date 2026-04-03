@@ -2,5 +2,15 @@
     <qresource prefix="/icons">
         <file alias="arrow_up.svg">images/arrow_circle_up.svg</file>
         <file alias="arrow_down.svg">images/arrow_circle_down.svg</file>
+        <file>images/terrain/forest.png</file>
+        <file>images/terrain/grass.png</file>
+        <file>images/terrain/mountain.png</file>
+        <file>images/terrain/ocean.png</file>
+        <file>images/units/medic_blue.png</file>
+        <file>images/units/medic_red.png</file>
+        <file>images/units/soldier_blue.png</file>
+        <file>images/units/soldier_red.png</file>
+        <file>images/units/tank_blue.png</file>
+        <file>images/units/tank_red.png</file>
     </qresource>
 </RCC>
