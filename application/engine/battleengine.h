@@ -16,7 +16,7 @@ public:
 
 private:
     bool canSelectUnit(const GameState& gameState, const Unit* unit) const;
-    QVector<QPair<int, int>> calculateAvailableMovePositions(const GameState& gameState, int x, int y) const;
+    void calculateMoveHighlights(GameState& gameState, int x, int y) const;
     bool tryMoveSelectedUnit(GameState& gameState, int targetX, int targetY);
     int calculateDistance(int x1, int y1, int x2, int y2) const;
 };

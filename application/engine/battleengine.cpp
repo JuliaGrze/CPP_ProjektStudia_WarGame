@@ -2,6 +2,9 @@
 
 #include "../models/tile.h"
 #include "../models/unit.h"
+#include "../models/enums/terraintype.h"
+
+#include <cmath>
 
 bool BattleEngine::canSelectUnit(const GameState& gameState, const Unit* unit) const
 {
@@ -16,13 +19,18 @@ int BattleEngine::calculateDistance(int x1, int y1, int x2, int y2) const
     return std::abs(x1 - x2) + std::abs(y1 - y2);
 }
 
-QVector<QPair<int, int>> BattleEngine::calculateAvailableMovePositions(const GameState& gameState, int x, int y) const
+void BattleEngine::calculateMoveHighlights(GameState& gameState, int x, int y) const
 {
-    QVector<QPair<int, int>> positions;
+    QVector<QPair<int, int>> availablePositions;
+    QVector<QPair<int, int>> blockedPositions;
 
     const Tile* startTile = gameState.getBoard().getTile(x, y);
     if (!startTile || !startTile->isOccupied() || !startTile->getUnit())
-        return positions;
+    {
+        gameState.clearAvailableMovePositions();
+        gameState.clearBlockedMovePositions();
+        return;
+    }
 
     const Unit* unit = startTile->getUnit();
     const int moveRange = unit->getMovementPoints();
@@ -34,22 +42,25 @@ QVector<QPair<int, int>> BattleEngine::calculateAvailableMovePositions(const Gam
             if (col == x && row == y)
                 continue;
 
+            if (calculateDistance(x, y, col, row) > moveRange)
+                continue;
+
             const Tile* tile = gameState.getBoard().getTile(col, row);
             if (!tile)
                 continue;
 
-            if (!tile->isWalkable())
-                continue;
+            const bool isPlain = tile->getTerrain() == TerrainType::Plain;
+            const bool isFree = !tile->isOccupied();
 
-            if (tile->isOccupied())
-                continue;
-
-            if (calculateDistance(x, y, col, row) <= moveRange)
-                positions.append({col, row});
+            if (isPlain && isFree)
+                availablePositions.append({col, row});
+            else
+                blockedPositions.append({col, row});
         }
     }
 
-    return positions;
+    gameState.setAvailableMovePositions(availablePositions);
+    gameState.setBlockedMovePositions(blockedPositions);
 }
 
 bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int targetY)
@@ -70,10 +81,13 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
     if (!sourceTile || !targetTile)
         return false;
 
-    if (!sourceTile->isOccupied() || targetTile->isOccupied())
+    if (!sourceTile->isOccupied())
         return false;
 
-    if (!targetTile->isWalkable())
+    if (targetTile->isOccupied())
+        return false;
+
+    if (targetTile->getTerrain() != TerrainType::Plain)
         return false;
 
     Unit* unit = sourceTile->getUnit();
@@ -84,9 +98,7 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
     targetTile->setUnit(unit);
 
     gameState.setSelectedPosition(targetX, targetY);
-    gameState.setAvailableMovePositions(
-        calculateAvailableMovePositions(gameState, targetX, targetY)
-        );
+    calculateMoveHighlights(gameState, targetX, targetY);
 
     return true;
 }
@@ -113,13 +125,12 @@ void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
     {
         gameState.clearSelectedPosition();
         gameState.clearAvailableMovePositions();
+        gameState.clearBlockedMovePositions();
         return;
     }
 
     gameState.setSelectedPosition(x, y);
-    gameState.setAvailableMovePositions(
-        calculateAvailableMovePositions(gameState, x, y)
-        );
+    calculateMoveHighlights(gameState, x, y);
 }
 
 void BattleEngine::endTurn(GameState& gameState)

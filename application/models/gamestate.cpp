@@ -72,6 +72,7 @@ void GameState::nextTurn()
 
     clearSelectedPosition();
     clearAvailableMovePositions();
+    clearBlockedMovePositions();
 }
 
 void GameState::setSelectedPosition(int x, int y)
@@ -119,6 +120,32 @@ void GameState::clearAvailableMovePositions()
 bool GameState::isMovePositionAvailable(int x, int y) const
 {
     for (const auto& position : m_availableMovePositions)
+    {
+        if (position.first == x && position.second == y)
+            return true;
+    }
+
+    return false;
+}
+
+void GameState::setBlockedMovePositions(const QVector<QPair<int, int>>& positions)
+{
+    m_blockedMovePositions = positions;
+}
+
+const QVector<QPair<int, int>>& GameState::getBlockedMovePositions() const
+{
+    return m_blockedMovePositions;
+}
+
+void GameState::clearBlockedMovePositions()
+{
+    m_blockedMovePositions.clear();
+}
+
+bool GameState::isBlockedMovePosition(int x, int y) const
+{
+    for (const auto& position : m_blockedMovePositions)
     {
         if (position.first == x && position.second == y)
             return true;

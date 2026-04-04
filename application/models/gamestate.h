@@ -42,6 +42,11 @@ public:
     void clearAvailableMovePositions();
     bool isMovePositionAvailable(int x, int y) const;
 
+    void setBlockedMovePositions(const QVector<QPair<int, int>>& positions);
+    const QVector<QPair<int, int>>& getBlockedMovePositions() const;
+    void clearBlockedMovePositions();
+    bool isBlockedMovePosition(int x, int y) const;
+
 private:
     Board m_board;
     Team m_playerTeam;
@@ -53,6 +58,7 @@ private:
     int m_selectedY = -1;
 
     QVector<QPair<int, int>> m_availableMovePositions;
+    QVector<QPair<int, int>> m_blockedMovePositions;
 };
 
 #endif // GAMESTATE_H

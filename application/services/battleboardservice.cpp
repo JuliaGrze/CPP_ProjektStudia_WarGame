@@ -3,6 +3,10 @@
 #include <QPushButton>
 #include <QLayoutItem>
 #include <QObject>
+#include <QFrame>
+#include <QPixmap>
+#include <QIcon>
+#include <QSize>
 
 #include "../models/board.h"
 #include "../models/tile.h"
@@ -63,13 +67,61 @@ void clearGrid(QGridLayout* grid)
     if (!grid)
         return;
 
-    while (QLayoutItem *item = grid->takeAt(0))
+    while (QLayoutItem* item = grid->takeAt(0))
     {
         if (item->widget())
             delete item->widget();
 
         delete item;
     }
+}
+
+QString buildOverlayStyle(bool isSelected, bool isAvailableMove, bool isBlockedMove)
+{
+    QString borderStyle = "border: none;";
+    QString backgroundStyle = "background-color: transparent;";
+
+    if (isAvailableMove)
+    {
+        borderStyle = "border: 5px solid rgb(22, 163, 74);";
+        backgroundStyle = "background-color: rgba(34, 197, 94, 120);";
+    }
+    else if (isBlockedMove)
+    {
+        borderStyle = "border: 5px solid rgb(220, 38, 38);";
+        backgroundStyle = "background-color: rgba(239, 68, 68, 120);";
+    }
+
+    if (isSelected)
+    {
+        borderStyle = "border: 5px solid rgb(250, 204, 21);";
+        backgroundStyle = "background-color: rgba(255, 213, 79, 115);";
+    }
+
+    return QString(
+               "QFrame {"
+               "%1"
+               "%2"
+               "margin: 0px;"
+               "padding: 0px;"
+               "}"
+               ).arg(borderStyle, backgroundStyle);
+}
+
+void setButtonImage(QPushButton* button, const QString& imagePath, int tileSize)
+{
+    if (!button)
+        return;
+
+    QPixmap pixmap(imagePath);
+    if (pixmap.isNull())
+    {
+        button->setText("");
+        return;
+    }
+
+    button->setIcon(QIcon(pixmap));
+    button->setIconSize(QSize(tileSize, tileSize));
 }
 }
 
@@ -131,14 +183,17 @@ void BattleBoardService::drawBoard(QGridLayout* grid,
     grid->setContentsMargins(horizontalMargin, verticalMargin,
                              horizontalMargin, verticalMargin);
 
+    const bool hasSelection = gameState.hasSelectedPosition();
+
     for (int row = 0; row < boardHeight; ++row)
     {
         for (int col = 0; col < boardWidth; ++col)
         {
-            auto *tileButton = new QPushButton(boardContainer);
+            auto* tileButton = new QPushButton(boardContainer);
             tileButton->setFixedSize(tileSize, tileSize);
             tileButton->setFocusPolicy(Qt::NoFocus);
             tileButton->setText("");
+            tileButton->setFlat(true);
 
             QString terrainPath = ":/icons/images/terrain/grass.png";
             QString unitPath;
@@ -154,31 +209,33 @@ void BattleBoardService::drawBoard(QGridLayout* grid,
 
             const QString imagePath = unitPath.isEmpty() ? terrainPath : unitPath;
 
+            setButtonImage(tileButton, imagePath, tileSize);
+
+            tileButton->setStyleSheet(
+                "QPushButton {"
+                "border: none;"
+                "padding: 0px;"
+                "margin: 0px;"
+                "background-color: transparent;"
+                "}"
+                );
+
             const bool isSelected =
-                gameState.hasSelectedPosition() &&
+                hasSelection &&
                 gameState.getSelectedX() == col &&
                 gameState.getSelectedY() == row;
 
-            const bool isAvailableMove = gameState.isMovePositionAvailable(col, row);
+            const bool isAvailableMove =
+                hasSelection && gameState.isMovePositionAvailable(col, row);
 
-            QString borderStyle = "border: 1px solid #dfe6ee;";
+            const bool isBlockedMove =
+                hasSelection && gameState.isBlockedMovePosition(col, row);
 
-            if (isAvailableMove)
-                borderStyle = "border: 3px solid #4ade80;";
-
-            if (isSelected)
-                borderStyle = "border: 3px solid #ffd54f;";
-
-            const QString style = QString(
-                                      "QPushButton {"
-                                      "border-image: url(%1) 0 0 0 0 stretch stretch;"
-                                      "%2"
-                                      "padding: 0px;"
-                                      "margin: 0px;"
-                                      "}"
-                                      ).arg(imagePath, borderStyle);
-
-            tileButton->setStyleSheet(style);
+            auto* overlay = new QFrame(tileButton);
+            overlay->setGeometry(0, 0, tileSize, tileSize);
+            overlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+            overlay->setStyleSheet(buildOverlayStyle(isSelected, isAvailableMove, isBlockedMove));
+            overlay->raise();
 
             QObject::connect(tileButton, &QPushButton::clicked, boardContainer, [onTileClicked, col, row]()
                              {

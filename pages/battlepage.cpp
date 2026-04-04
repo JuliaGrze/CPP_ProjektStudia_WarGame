@@ -125,7 +125,7 @@ void BattlePage::refreshStatistics()
 
     ui->labelBattleLog->setText(
         "Kliknij swoją jednostkę, aby ją wybrać. "
-        "Zielone pola oznaczają możliwy ruch."
+        "Zielone pola pokazują, gdzie możesz wejść, a czerwone pola są w zasięgu, ale są zablokowane."
         );
 
     ui->labelTeamsInfo->setText(
@@ -190,7 +190,7 @@ void BattlePage::refreshStatistics()
                 );
 
             ui->labelBattleLog->setText(
-                QString("Wybrano jednostkę: %1 (%2). Zielone pola pokazują możliwy ruch.")
+                QString("Wybrano jednostkę: %1 (%2). Zielone pola oznaczają dozwolony ruch, czerwone pola są niedostępne.")
                     .arg(unit->getName())
                     .arg(isPlayerUnit ? "Niebiescy" : "Czerwoni")
                 );
