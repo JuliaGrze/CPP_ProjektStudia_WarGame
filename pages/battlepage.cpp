@@ -4,9 +4,14 @@
 #include <QPushButton>
 #include <QTimer>
 
-#include "../application/services/battleinteractionservice.h"
+#include "../application/controllers/gamecontroller.h"
+#include "../application/models/gamestate.h"
 #include "../application/models/team.h"
+#include "../application/models/tile.h"
+#include "../application/models/unit.h"
+#include "../application/models/enums/teamside.h"
 #include "../application/services/battleboardservice.h"
+#include "../config/gameconfig.h"
 
 BattlePage::BattlePage(QWidget *parent)
     : QWidget(parent)
@@ -17,6 +22,17 @@ BattlePage::BattlePage(QWidget *parent)
     connect(ui->btnBackToMenu, &QPushButton::clicked,
             this, &BattlePage::backToMenuClicked);
 
+    connect(ui->btnEndTurn, &QPushButton::clicked, this, [this]()
+            {
+                if (!m_controller)
+                    return;
+
+                m_controller->endTurn();
+                updateTurnInfo();
+                refreshStatistics();
+                redrawBoard();
+            });
+
     updateTurnInfo();
     refreshStatistics();
 }
@@ -26,21 +42,10 @@ BattlePage::~BattlePage()
     delete ui;
 }
 
-void BattlePage::setConfiguration(const GameConfig& config)
+void BattlePage::setController(GameController* controller)
 {
-    m_config = config;
-    updateTurnInfo();
-    refreshStatistics();
+    m_controller = controller;
 
-    QTimer::singleShot(0, this, [this]()
-                       {
-                           redrawBoard();
-                       });
-}
-
-void BattlePage::setGameState(const GameState& gameState)
-{
-    m_gameState = gameState;
     updateTurnInfo();
     refreshStatistics();
 
@@ -52,16 +57,19 @@ void BattlePage::setGameState(const GameState& gameState)
 
 void BattlePage::redrawBoard()
 {
-    if (m_isDrawingBoard)
+    if (m_isDrawingBoard || !m_controller)
         return;
 
     m_isDrawingBoard = true;
 
+    const GameState& gameState = m_controller->getGameState();
+    const GameConfig& config = m_controller->getGameConfig();
+
     BattleBoardService::drawBoard(
         ui->gridLayout_2,
         ui->boardContainer,
-        m_gameState,
-        m_config,
+        gameState,
+        config,
         [this](int x, int y)
         {
             onTileClicked(x, y);
@@ -73,22 +81,52 @@ void BattlePage::redrawBoard()
 
 void BattlePage::updateTurnInfo()
 {
+    int currentTurn = 1;
+
+    if (m_controller)
+        currentTurn = m_controller->getGameState().getCurrentTurn();
+
     ui->labelTurnNumber->setText(
         QString("<div style='text-align:center; font-size:18px; font-weight:800; color:#f9fafb;'>Tura %1</div>")
-            .arg(m_gameState.getCurrentTurn())
+            .arg(currentTurn)
         );
 }
 
 void BattlePage::refreshStatistics()
 {
-    int playerCount = m_gameState.getPlayerTeam().getAliveUnitsCount();
-    int enemyCount = m_gameState.getEnemyTeam().getAliveUnitsCount();
+    if (!m_controller)
+    {
+        ui->labelBattleLog->setText("Brak aktywnej gry.");
+        ui->labelTeamsInfo->setText(
+            "<div style='text-align:center; color:#9ca3af;'>Brak danych rozgrywki</div>"
+            );
+        ui->labelUnitName->setText(
+            "<div style='text-align:center;'>"
+            "<span style='font-size:12px; color:#9ca3af;'>PANEL JEDNOSTKI</span><br/>"
+            "<span style='font-size:18px; font-weight:800; color:#e5e7eb;'>Brak wyboru</span>"
+            "</div>"
+            );
+        ui->labelUnitStats->setText(
+            "<div style='line-height:1.8; color:#9ca3af; text-align:center;'>"
+            "Uruchom grę, aby zobaczyć statystyki."
+            "</div>"
+            );
+        return;
+    }
 
-    const bool isPlayerTurn = m_gameState.getCurrentSide() == TeamSide::Player;
+    const GameState& gameState = m_controller->getGameState();
+
+    int playerCount = gameState.getPlayerTeam().getAliveUnitsCount();
+    int enemyCount = gameState.getEnemyTeam().getAliveUnitsCount();
+
+    const bool isPlayerTurn = gameState.getCurrentSide() == TeamSide::Player;
     const QString currentSideText = isPlayerTurn ? "NIEBIESCY" : "CZERWONI";
     const QString currentSideColor = isPlayerTurn ? "#60a5fa" : "#f87171";
 
-    ui->labelBattleLog->setText("Kliknij jednostkę na planszy, aby zobaczyć jej szczegóły.");
+    ui->labelBattleLog->setText(
+        "Kliknij swoją jednostkę, aby ją wybrać. "
+        "Zielone pola oznaczają możliwy ruch."
+        );
 
     ui->labelTeamsInfo->setText(
         QString(
@@ -107,11 +145,11 @@ void BattlePage::refreshStatistics()
             .arg(currentSideText)
         );
 
-    if (m_gameState.hasSelectedPosition())
+    if (gameState.hasSelectedPosition())
     {
-        const Tile* tile = m_gameState.getBoard().getTile(
-            m_gameState.getSelectedX(),
-            m_gameState.getSelectedY()
+        const Tile* tile = gameState.getBoard().getTile(
+            gameState.getSelectedX(),
+            gameState.getSelectedY()
             );
 
         if (tile && tile->isOccupied() && tile->getUnit())
@@ -152,7 +190,7 @@ void BattlePage::refreshStatistics()
                 );
 
             ui->labelBattleLog->setText(
-                QString("Wybrano jednostkę: %1 (%2).")
+                QString("Wybrano jednostkę: %1 (%2). Zielone pola pokazują możliwy ruch.")
                     .arg(unit->getName())
                     .arg(isPlayerUnit ? "Niebiescy" : "Czerwoni")
                 );
@@ -177,7 +215,12 @@ void BattlePage::refreshStatistics()
 
 void BattlePage::onTileClicked(int x, int y)
 {
-    BattleInteractionService::handleTileClick(m_gameState, x, y);
+    if (!m_controller)
+        return;
+
+    m_controller->handleTileClick(x, y);
+
+    updateTurnInfo();
     refreshStatistics();
     redrawBoard();
 }

@@ -12,6 +12,7 @@ QT_END_NAMESPACE
 class MenuPage;
 class ConfigPage;
 class BattlePage;
+class GameController;
 
 class MainWindow : public QMainWindow
 {
@@ -26,6 +27,7 @@ private:
     MenuPage *menuPage;
     ConfigPage *configPage;
     BattlePage *battlePage;
+    GameController *gameController;
 };
 
 #endif // MAINWINDOW_H

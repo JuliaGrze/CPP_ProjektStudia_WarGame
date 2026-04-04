@@ -159,9 +159,15 @@ void BattleBoardService::drawBoard(QGridLayout* grid,
                 gameState.getSelectedX() == col &&
                 gameState.getSelectedY() == row;
 
-            const QString borderStyle = isSelected
-                                            ? "border: 3px solid #ffd54f;"
-                                            : "border: 1px solid #dfe6ee;";
+            const bool isAvailableMove = gameState.isMovePositionAvailable(col, row);
+
+            QString borderStyle = "border: 1px solid #dfe6ee;";
+
+            if (isAvailableMove)
+                borderStyle = "border: 3px solid #4ade80;";
+
+            if (isSelected)
+                borderStyle = "border: 3px solid #ffd54f;";
 
             const QString style = QString(
                                       "QPushButton {"

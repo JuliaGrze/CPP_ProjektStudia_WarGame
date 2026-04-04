@@ -5,6 +5,9 @@
 #include "team.h"
 #include "enums/teamside.h"
 
+#include <QVector>
+#include <QPair>
+
 class GameState
 {
 public:
@@ -34,6 +37,11 @@ public:
     int getSelectedX() const;
     int getSelectedY() const;
 
+    void setAvailableMovePositions(const QVector<QPair<int, int>>& positions);
+    const QVector<QPair<int, int>>& getAvailableMovePositions() const;
+    void clearAvailableMovePositions();
+    bool isMovePositionAvailable(int x, int y) const;
+
 private:
     Board m_board;
     Team m_playerTeam;
@@ -43,6 +51,8 @@ private:
 
     int m_selectedX = -1;
     int m_selectedY = -1;
+
+    QVector<QPair<int, int>> m_availableMovePositions;
 };
 
 #endif // GAMESTATE_H

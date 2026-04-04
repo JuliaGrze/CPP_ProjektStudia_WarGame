@@ -44,7 +44,9 @@ qt_add_executable(WarGame
     application/services/gamesetupservice.h application/services/gamesetupservice.cpp
     application/services/gameconfigvalidationservice.h application/services/gameconfigvalidationservice.cpp
     application/services/battleboardservice.h application/services/battleboardservice.cpp
-    application/services/battleinteractionservice.h application/services/battleinteractionservice.cpp
+
+    application/controllers/gamecontroller.h application/controllers/gamecontroller.cpp
+    application/engine/battleengine.h application/engine/battleengine.cpp
 )
 
 target_link_libraries(WarGame

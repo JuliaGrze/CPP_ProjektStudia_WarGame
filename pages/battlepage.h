@@ -4,8 +4,8 @@
 #include <QWidget>
 #include <QResizeEvent>
 #include <QShowEvent>
-#include "../config/gameconfig.h"
-#include "../application/models/gamestate.h"
+
+class GameController;
 
 namespace Ui {
 class BattlePage;
@@ -19,8 +19,7 @@ public:
     explicit BattlePage(QWidget *parent = nullptr);
     ~BattlePage();
 
-    void setConfiguration(const GameConfig& config);
-    void setGameState(const GameState& gameState);
+    void setController(GameController* controller);
 
     void updateTurnInfo();
     void refreshStatistics();
@@ -37,8 +36,7 @@ private:
     void onTileClicked(int x, int y);
 
     Ui::BattlePage *ui;
-    GameConfig m_config;
-    GameState m_gameState;
+    GameController* m_controller = nullptr;
     bool m_isDrawingBoard = false;
 };
 

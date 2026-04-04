@@ -4,7 +4,7 @@
 #include "pages/menupage.h"
 #include "pages/configpage.h"
 #include "pages/battlepage.h"
-#include "application/services/gamesetupservice.h"
+#include "application/controllers/gamecontroller.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -12,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     , menuPage(new MenuPage(this))
     , configPage(new ConfigPage(this))
     , battlePage(new BattlePage(this))
+    , gameController(new GameController())
 {
     ui->setupUi(this);
 
@@ -37,9 +38,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(configPage, &ConfigPage::startClicked, this, [this](const GameConfig& config)
             {
-                GameState state = GameSetupService::createGame(config);
-                battlePage->setConfiguration(config);
-                battlePage->setGameState(state);
+                gameController->startGame(config);
+                battlePage->setController(gameController);
                 ui->stackedWidget->setCurrentWidget(battlePage);
             });
 
@@ -51,5 +51,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    delete gameController;
     delete ui;
 }

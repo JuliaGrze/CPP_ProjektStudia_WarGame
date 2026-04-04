@@ -71,6 +71,7 @@ void GameState::nextTurn()
     }
 
     clearSelectedPosition();
+    clearAvailableMovePositions();
 }
 
 void GameState::setSelectedPosition(int x, int y)
@@ -98,4 +99,30 @@ int GameState::getSelectedX() const
 int GameState::getSelectedY() const
 {
     return m_selectedY;
+}
+
+void GameState::setAvailableMovePositions(const QVector<QPair<int, int>>& positions)
+{
+    m_availableMovePositions = positions;
+}
+
+const QVector<QPair<int, int>>& GameState::getAvailableMovePositions() const
+{
+    return m_availableMovePositions;
+}
+
+void GameState::clearAvailableMovePositions()
+{
+    m_availableMovePositions.clear();
+}
+
+bool GameState::isMovePositionAvailable(int x, int y) const
+{
+    for (const auto& position : m_availableMovePositions)
+    {
+        if (position.first == x && position.second == y)
+            return true;
+    }
+
+    return false;
 }
