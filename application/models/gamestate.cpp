@@ -1,8 +1,7 @@
 #include "gamestate.h"
 
 GameState::GameState()
-    : m_playerTeam("Niebiescy", TeamSide::Player),
-    m_enemyTeam("Czerwoni", TeamSide::Enemy)
+    : m_board(10, 10)
 {
 }
 
@@ -14,6 +13,11 @@ Board& GameState::getBoard()
 const Board& GameState::getBoard() const
 {
     return m_board;
+}
+
+void GameState::setBoard(const Board& board)
+{
+    m_board = board;
 }
 
 Team& GameState::getPlayerTeam()
@@ -41,64 +45,57 @@ int GameState::getCurrentTurn() const
     return m_currentTurn;
 }
 
+void GameState::setCurrentTurn(int turn)
+{
+    m_currentTurn = turn;
+}
+
 TeamSide GameState::getCurrentSide() const
 {
     return m_currentSide;
 }
 
-bool GameState::isGameFinished() const
+void GameState::setCurrentSide(TeamSide side)
 {
-    return m_gameFinished;
-}
-
-void GameState::setBoard(const Board& board)
-{
-    m_board = board;
-}
-
-void GameState::setPlayerTeam(const Team& team)
-{
-    m_playerTeam = team;
-}
-
-void GameState::setEnemyTeam(const Team& team)
-{
-    m_enemyTeam = team;
+    m_currentSide = side;
 }
 
 void GameState::nextTurn()
 {
-    switchCurrentTeam();
-
-    if (m_currentSide == TeamSide::Player)
-        ++m_currentTurn;
-}
-
-void GameState::switchCurrentTeam()
-{
     if (m_currentSide == TeamSide::Player)
         m_currentSide = TeamSide::Enemy;
     else
-        m_currentSide = TeamSide::Player;
-}
-
-bool GameState::checkVictory()
-{
-    if (!m_playerTeam.hasUnitsAlive() || !m_enemyTeam.hasUnitsAlive())
     {
-        m_gameFinished = true;
-        return true;
+        m_currentSide = TeamSide::Player;
+        ++m_currentTurn;
     }
 
-    return false;
+    clearSelectedPosition();
 }
 
-void GameState::reset()
+void GameState::setSelectedPosition(int x, int y)
 {
-    m_board = Board();
-    m_playerTeam = Team("Niebiescy", TeamSide::Player);
-    m_enemyTeam = Team("Czerwoni", TeamSide::Enemy);
-    m_currentTurn = 1;
-    m_currentSide = TeamSide::Player;
-    m_gameFinished = false;
+    m_selectedX = x;
+    m_selectedY = y;
+}
+
+void GameState::clearSelectedPosition()
+{
+    m_selectedX = -1;
+    m_selectedY = -1;
+}
+
+bool GameState::hasSelectedPosition() const
+{
+    return m_selectedX >= 0 && m_selectedY >= 0;
+}
+
+int GameState::getSelectedX() const
+{
+    return m_selectedX;
+}
+
+int GameState::getSelectedY() const
+{
+    return m_selectedY;
 }

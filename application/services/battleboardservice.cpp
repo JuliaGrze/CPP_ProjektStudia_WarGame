@@ -2,6 +2,7 @@
 
 #include <QPushButton>
 #include <QLayoutItem>
+#include <QObject>
 
 #include "../models/board.h"
 #include "../models/tile.h"
@@ -75,7 +76,8 @@ void clearGrid(QGridLayout* grid)
 void BattleBoardService::drawBoard(QGridLayout* grid,
                                    QWidget* boardContainer,
                                    const GameState& gameState,
-                                   const GameConfig& config)
+                                   const GameConfig& config,
+                                   const std::function<void(int, int)>& onTileClicked)
 {
     if (!grid || !boardContainer)
         return;
@@ -152,16 +154,32 @@ void BattleBoardService::drawBoard(QGridLayout* grid,
 
             const QString imagePath = unitPath.isEmpty() ? terrainPath : unitPath;
 
+            const bool isSelected =
+                gameState.hasSelectedPosition() &&
+                gameState.getSelectedX() == col &&
+                gameState.getSelectedY() == row;
+
+            const QString borderStyle = isSelected
+                                            ? "border: 3px solid #ffd54f;"
+                                            : "border: 1px solid #dfe6ee;";
+
             const QString style = QString(
                                       "QPushButton {"
                                       "border-image: url(%1) 0 0 0 0 stretch stretch;"
-                                      "border: 1px solid #dfe6ee;"
+                                      "%2"
                                       "padding: 0px;"
                                       "margin: 0px;"
                                       "}"
-                                      ).arg(imagePath);
+                                      ).arg(imagePath, borderStyle);
 
             tileButton->setStyleSheet(style);
+
+            QObject::connect(tileButton, &QPushButton::clicked, boardContainer, [onTileClicked, col, row]()
+                             {
+                                 if (onTileClicked)
+                                     onTileClicked(col, row);
+                             });
+
             grid->addWidget(tileButton, row, col);
         }
     }

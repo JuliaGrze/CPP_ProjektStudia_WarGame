@@ -38,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(configPage, &ConfigPage::startClicked, this, [this](const GameConfig& config)
             {
                 GameState state = GameSetupService::createGame(config);
+                battlePage->setConfiguration(config);
                 battlePage->setGameState(state);
                 ui->stackedWidget->setCurrentWidget(battlePage);
             });

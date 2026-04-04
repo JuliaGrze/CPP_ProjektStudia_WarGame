@@ -12,6 +12,7 @@ public:
 
     Board& getBoard();
     const Board& getBoard() const;
+    void setBoard(const Board& board);
 
     Team& getPlayerTeam();
     const Team& getPlayerTeam() const;
@@ -20,17 +21,18 @@ public:
     const Team& getEnemyTeam() const;
 
     int getCurrentTurn() const;
-    TeamSide getCurrentSide() const;
-    bool isGameFinished() const;
+    void setCurrentTurn(int turn);
 
-    void setBoard(const Board& board);
-    void setPlayerTeam(const Team& team);
-    void setEnemyTeam(const Team& team);
+    TeamSide getCurrentSide() const;
+    void setCurrentSide(TeamSide side);
 
     void nextTurn();
-    void switchCurrentTeam();
-    bool checkVictory();
-    void reset();
+
+    void setSelectedPosition(int x, int y);
+    void clearSelectedPosition();
+    bool hasSelectedPosition() const;
+    int getSelectedX() const;
+    int getSelectedY() const;
 
 private:
     Board m_board;
@@ -38,7 +40,9 @@ private:
     Team m_enemyTeam;
     int m_currentTurn = 1;
     TeamSide m_currentSide = TeamSide::Player;
-    bool m_gameFinished = false;
+
+    int m_selectedX = -1;
+    int m_selectedY = -1;
 };
 
 #endif // GAMESTATE_H

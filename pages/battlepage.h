@@ -34,6 +34,7 @@ protected:
 
 private:
     void redrawBoard();
+    void onTileClicked(int x, int y);
 
     Ui::BattlePage *ui;
     GameConfig m_config;

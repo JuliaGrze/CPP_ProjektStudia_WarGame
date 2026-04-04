@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QTimer>
 
+#include "../application/services/battleinteractionservice.h"
 #include "../application/models/team.h"
 #include "../application/services/battleboardservice.h"
 
@@ -60,7 +61,11 @@ void BattlePage::redrawBoard()
         ui->gridLayout_2,
         ui->boardContainer,
         m_gameState,
-        m_config
+        m_config,
+        [this](int x, int y)
+        {
+            onTileClicked(x, y);
+        }
         );
 
     m_isDrawingBoard = false;
@@ -78,31 +83,48 @@ void BattlePage::refreshStatistics()
     int playerCount = m_gameState.getPlayerTeam().getAliveUnitsCount();
     int enemyCount = m_gameState.getEnemyTeam().getAliveUnitsCount();
 
+    QString sideText = (m_gameState.getCurrentSide() == TeamSide::Player)
+                           ? "Niebiescy"
+                           : "Czerwoni";
+
     ui->labelTeamsInfo->setText(
-        QString("Niebiescy: %1 | Czerwoni: %2").arg(playerCount).arg(enemyCount)
+        QString("Niebiescy: %1 | Czerwoni: %2 | Ruch: %3")
+            .arg(playerCount)
+            .arg(enemyCount)
+            .arg(sideText)
         );
 
-    const Team& playerTeam = m_gameState.getPlayerTeam();
-    auto units = playerTeam.getUnits();
-
-    if (!units.isEmpty() && units.first())
+    if (m_gameState.hasSelectedPosition())
     {
-        const auto& unit = units.first();
-
-        ui->labelUnitName->setText(unit->getName());
-        ui->labelUnitStats->setText(
-            QString("HP: %1\nAtak: %2\nZasięg: %3\nRuch: %4")
-                .arg(unit->getHealth())
-                .arg(unit->getDamage())
-                .arg(unit->getRange())
-                .arg(unit->getMovementPoints())
+        const Tile* tile = m_gameState.getBoard().getTile(
+            m_gameState.getSelectedX(),
+            m_gameState.getSelectedY()
             );
+
+        if (tile && tile->isOccupied() && tile->getUnit())
+        {
+            const Unit* unit = tile->getUnit();
+
+            ui->labelUnitName->setText(unit->getName());
+            ui->labelUnitStats->setText(
+                QString("HP: %1\nAtak: %2\nZasięg: %3\nRuch: %4")
+                    .arg(unit->getHealth())
+                    .arg(unit->getDamage())
+                    .arg(unit->getRange())
+                    .arg(unit->getMovementPoints())
+                );
+            return;
+        }
     }
-    else
-    {
-        ui->labelUnitName->setText("Brak jednostki");
-        ui->labelUnitStats->setText("HP: -\nAtak: -\nZasięg: -\nRuch: -");
-    }
+
+    ui->labelUnitName->setText("Brak jednostki");
+    ui->labelUnitStats->setText("HP: -\nAtak: -\nZasięg: -\nRuch: -");
+}
+void BattlePage::onTileClicked(int x, int y)
+{
+    BattleInteractionService::handleTileClick(m_gameState, x, y);
+    refreshStatistics();
+    redrawBoard();
 }
 
 void BattlePage::resizeEvent(QResizeEvent *event)
