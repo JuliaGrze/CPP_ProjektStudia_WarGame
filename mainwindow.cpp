@@ -7,14 +7,8 @@
 
 #include "application/models/board.h"
 #include "application/models/tile.h"
-#include "application/models/infantry.h"
-#include "application/models/tank.h"
-#include "application/models/artillery.h"
-#include "application/models/medic.h"
 #include "application/models/enums/terraintype.h"
-#include "application/models/enums/teamside.h"
-
-#include <memory>
+#include "application/helpers/unitplacementhelper.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -89,8 +83,14 @@ GameState MainWindow::createTestGameState(const GameConfig& config)
     {
         for (int i = 1; i < boardSize - 1; i += 3)
         {
-            board.getTile(boardSize / 3, i)->setTerrain(TerrainType::Forest);
-            board.getTile((boardSize / 3) * 2, i)->setTerrain(TerrainType::Mountain);
+            Tile* forestTile = board.getTile(boardSize / 3, i);
+            Tile* mountainTile = board.getTile((boardSize / 3) * 2, i);
+
+            if (forestTile)
+                forestTile->setTerrain(TerrainType::Forest);
+
+            if (mountainTile)
+                mountainTile->setTerrain(TerrainType::Mountain);
         }
     }
     else if (config.mapVariant == "Rzeka i most")
@@ -98,87 +98,42 @@ GameState MainWindow::createTestGameState(const GameConfig& config)
         int riverColumn = boardSize / 2;
 
         for (int y = 0; y < boardSize; ++y)
-            board.getTile(riverColumn, y)->setTerrain(TerrainType::Water);
+        {
+            Tile* waterTile = board.getTile(riverColumn, y);
+            if (waterTile)
+                waterTile->setTerrain(TerrainType::Water);
+        }
 
-        board.getTile(riverColumn, boardSize / 2)->setTerrain(TerrainType::Plain);
-        board.getTile(riverColumn, boardSize / 2 - 1)->setTerrain(TerrainType::Plain);
+        Tile* bridgeTile1 = board.getTile(riverColumn, boardSize / 2);
+        Tile* bridgeTile2 = board.getTile(riverColumn, boardSize / 2 - 1);
+
+        if (bridgeTile1)
+            bridgeTile1->setTerrain(TerrainType::Plain);
+
+        if (bridgeTile2)
+            bridgeTile2->setTerrain(TerrainType::Plain);
     }
     else if (config.mapVariant == "Zabudowania")
     {
         for (int y = 2; y < boardSize - 2; y += 4)
         {
             for (int x = boardSize / 2 - 1; x <= boardSize / 2 + 1; ++x)
-                board.getTile(x, y)->setTerrain(TerrainType::Building);
+            {
+                Tile* buildingTile = board.getTile(x, y);
+                if (buildingTile)
+                    buildingTile->setTerrain(TerrainType::Building);
+            }
         }
     }
 
-    // ===== POZYCJE STARTOWE =====
-    QVector<QPair<int, int>> playerPositions;
-    QVector<QPair<int, int>> enemyPositions;
-
-    for (int y = 1; y < boardSize - 1; ++y)
-    {
-        playerPositions.append({1, y});
-        playerPositions.append({2, y});
-
-        enemyPositions.append({boardSize - 2, y});
-        enemyPositions.append({boardSize - 3, y});
-    }
-
-    int playerIndex = 0;
-    int enemyIndex = 0;
-
-    // ===== FUNKCJA TWORZENIA JEDNOSTEK =====
-    auto createAndPlaceUnits = [&](const TeamComposition& comp,
-                                   Team& team,
-                                   TeamSide side,
-                                   const QVector<QPair<int,int>>& positions,
-                                   int& index)
-    {
-        auto addUnit = [&](std::shared_ptr<Unit> unit)
-        {
-            team.addUnit(unit);
-
-            while (index < positions.size())
-            {
-                int x = positions[index].first;
-                int y = positions[index].second;
-                ++index;
-
-                Tile* tile = board.getTile(x, y);
-                if (tile && !tile->isOccupied() && tile->isWalkable())
-                {
-                    tile->setUnit(unit.get());
-                    break;
-                }
-            }
-        };
-
-        for (int i = 0; i < comp.infantry; ++i)
-            addUnit(std::make_shared<Infantry>(side));
-
-        for (int i = 0; i < comp.tank; ++i)
-            addUnit(std::make_shared<Tank>(side));
-
-        for (int i = 0; i < comp.artillery; ++i)
-            addUnit(std::make_shared<Artillery>(side));
-
-        for (int i = 0; i < comp.medic; ++i)
-            addUnit(std::make_shared<Medic>(side));
-    };
-
-    // ===== TWORZENIE DRUŻYN =====
-    createAndPlaceUnits(config.playerTeam,
-                        state.getPlayerTeam(),
-                        TeamSide::Player,
-                        playerPositions,
-                        playerIndex);
-
-    createAndPlaceUnits(config.enemyTeam,
-                        state.getEnemyTeam(),
-                        TeamSide::Enemy,
-                        enemyPositions,
-                        enemyIndex);
+    // ===== ROZMIESZCZENIE JEDNOSTEK =====
+    UnitPlacementHelper::placeTeams(
+        board,
+        state.getPlayerTeam(),
+        state.getEnemyTeam(),
+        config.playerTeam,
+        config.enemyTeam
+        );
 
     state.setBoard(board);
 

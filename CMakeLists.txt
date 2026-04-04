@@ -40,6 +40,7 @@ qt_add_executable(WarGame
     application/models/enums/terraintype.h
     application/models/enums/maptype.h
     application/models/enums/teamside.h
+    application/helpers/unitplacementhelper.h application/helpers/unitplacementhelper.cpp
 )
 
 target_link_libraries(WarGame
