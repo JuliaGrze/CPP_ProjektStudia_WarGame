@@ -18,13 +18,13 @@ public:
     virtual int getRange() const = 0;
 
     virtual int getMovementPoints() const = 0;
-    virtual int getCurrentMovementPoints() const = 0;
+    virtual int getAttackCost() const = 0;
+    virtual int getMoveCostPerTile() const = 0;
 
     virtual bool isAlive() const = 0;
     virtual void takeDamage(int amount) = 0;
     virtual void heal(int amount) = 0;
 
-    virtual void consumeMovementPoints(int amount) = 0;
     virtual void resetTurnResources() = 0;
 
     virtual QString getUnitType() const = 0;

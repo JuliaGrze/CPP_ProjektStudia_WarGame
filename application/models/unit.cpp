@@ -6,7 +6,9 @@ Unit::Unit(const QString& name,
            int health,
            int damage,
            int range,
-           int movementPoints)
+           int movementPoints,
+           int attackCost,
+           int moveCostPerTile)
     : m_name(name),
     m_side(side),
     m_health(health),
@@ -14,7 +16,8 @@ Unit::Unit(const QString& name,
     m_damage(damage),
     m_range(range),
     m_movementPoints(movementPoints),
-    m_currentMovementPoints(movementPoints)
+    m_attackCost(attackCost),
+    m_moveCostPerTile(moveCostPerTile)
 {
 }
 
@@ -53,9 +56,14 @@ int Unit::getMovementPoints() const
     return m_movementPoints;
 }
 
-int Unit::getCurrentMovementPoints() const
+int Unit::getAttackCost() const
 {
-    return m_currentMovementPoints;
+    return m_attackCost;
+}
+
+int Unit::getMoveCostPerTile() const
+{
+    return m_moveCostPerTile;
 }
 
 bool Unit::isAlive() const
@@ -79,15 +87,6 @@ void Unit::heal(int amount)
     m_health = std::min(m_maxHealth, m_health + amount);
 }
 
-void Unit::consumeMovementPoints(int amount)
-{
-    if (amount <= 0)
-        return;
-
-    m_currentMovementPoints = std::max(0, m_currentMovementPoints - amount);
-}
-
 void Unit::resetTurnResources()
 {
-    m_currentMovementPoints = m_movementPoints;
 }

@@ -12,7 +12,9 @@ public:
          int health,
          int damage,
          int range,
-         int movementPoints);
+         int movementPoints,
+         int attackCost,
+         int moveCostPerTile = 1);
 
     virtual ~Unit() = default;
 
@@ -25,13 +27,13 @@ public:
     int getRange() const;
 
     int getMovementPoints() const;
-    int getCurrentMovementPoints() const;
+    int getAttackCost() const;
+    int getMoveCostPerTile() const;
 
     bool isAlive() const;
     void takeDamage(int amount);
     void heal(int amount);
 
-    void consumeMovementPoints(int amount);
     void resetTurnResources();
 
     virtual QString getUnitType() const = 0;
@@ -45,7 +47,8 @@ protected:
     int m_range;
 
     int m_movementPoints;
-    int m_currentMovementPoints;
+    int m_attackCost;
+    int m_moveCostPerTile;
 };
 
 #endif // UNIT_H

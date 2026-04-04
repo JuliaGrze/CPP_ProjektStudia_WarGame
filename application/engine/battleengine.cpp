@@ -15,7 +15,7 @@ struct MoveNode
 {
     int x;
     int y;
-    int steps;
+    int spentCost;
 };
 
 QString makeKey(int x, int y)
@@ -35,7 +35,7 @@ bool BattleEngine::canSelectUnit(const GameState& gameState, const Unit* unit) c
     if (unit->getSide() != gameState.getCurrentSide())
         return false;
 
-    return gameState.hasTurnActionPoints();
+    return true;
 }
 
 int BattleEngine::calculateDistance(int x1, int y1, int x2, int y2) const
@@ -57,23 +57,31 @@ void BattleEngine::calculateMoveHighlights(GameState& gameState, int startX, int
     }
 
     const Unit* unit = startTile->getUnit();
-
-    if (!gameState.hasTurnActionPoints() || unit->getCurrentMovementPoints() <= 0)
+    if (!unit)
     {
         gameState.clearAvailableMovePositions();
         gameState.clearBlockedMovePositions();
         return;
     }
 
-    const int moveRange = unit->getCurrentMovementPoints();
+    const int maxCostByRange = unit->getMovementPoints() * unit->getMoveCostPerTile();
+    const int maxAffordableCost = gameState.getCurrentTurnActionPoints();
+    const int maxAllowedCost = std::min(maxCostByRange, maxAffordableCost);
+
+    if (maxAllowedCost <= 0)
+    {
+        gameState.clearAvailableMovePositions();
+        gameState.clearBlockedMovePositions();
+        return;
+    }
 
     QQueue<MoveNode> queue;
-    QSet<QString> visited;
     QSet<QString> availableSet;
     QSet<QString> blockedSet;
+    QHash<QString, int> bestCost;
 
     queue.enqueue({ startX, startY, 0 });
-    visited.insert(makeKey(startX, startY));
+    bestCost.insert(makeKey(startX, startY), 0);
 
     const int directions[4][2] =
         {
@@ -85,10 +93,7 @@ void BattleEngine::calculateMoveHighlights(GameState& gameState, int startX, int
 
     while (!queue.isEmpty())
     {
-        MoveNode current = queue.dequeue();
-
-        if (current.steps >= moveRange)
-            continue;
+        const MoveNode current = queue.dequeue();
 
         for (const auto& direction : directions)
         {
@@ -98,15 +103,13 @@ void BattleEngine::calculateMoveHighlights(GameState& gameState, int startX, int
             if (!gameState.getBoard().isInsideBoard(nextX, nextY))
                 continue;
 
-            const QString key = makeKey(nextX, nextY);
             const Tile* nextTile = gameState.getBoard().getTile(nextX, nextY);
             if (!nextTile)
                 continue;
 
-            const bool isPlain = nextTile->getTerrain() == TerrainType::Plain;
-            const bool isOccupied = nextTile->isOccupied();
+            const QString key = makeKey(nextX, nextY);
 
-            if (!isPlain || isOccupied)
+            if (!nextTile->isWalkable() || nextTile->isOccupied())
             {
                 if (!blockedSet.contains(key))
                 {
@@ -116,10 +119,14 @@ void BattleEngine::calculateMoveHighlights(GameState& gameState, int startX, int
                 continue;
             }
 
-            if (visited.contains(key))
+            const int nextCost = current.spentCost + unit->getMoveCostPerTile();
+            if (nextCost > maxAllowedCost)
                 continue;
 
-            visited.insert(key);
+            if (bestCost.contains(key) && bestCost.value(key) <= nextCost)
+                continue;
+
+            bestCost.insert(key, nextCost);
 
             if (!availableSet.contains(key))
             {
@@ -127,7 +134,7 @@ void BattleEngine::calculateMoveHighlights(GameState& gameState, int startX, int
                 availableSet.insert(key);
             }
 
-            queue.enqueue({ nextX, nextY, current.steps + 1 });
+            queue.enqueue({ nextX, nextY, nextCost });
         }
     }
 
@@ -159,28 +166,37 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
     if (targetTile->isOccupied())
         return false;
 
-    if (targetTile->getTerrain() != TerrainType::Plain)
+    if (!targetTile->isWalkable())
         return false;
 
     Unit* unit = sourceTile->getUnit();
     if (!unit)
         return false;
 
-    if (!gameState.hasTurnActionPoints())
-    {
-        gameState.setLastActionMessage("Drużyna nie ma już punktów akcji w tej turze.");
-        return false;
-    }
-
-    const int movementCost = calculateDistance(
+    const int movementDistance = calculateDistance(
         sourceTile->getX(), sourceTile->getY(), targetX, targetY
         );
 
-    if (movementCost > unit->getCurrentMovementPoints())
+    if (movementDistance <= 0)
+        return false;
+
+    if (movementDistance > unit->getMovementPoints())
     {
         gameState.setLastActionMessage(
-            QString("%1 nie ma wystarczającej liczby punktów ruchu.")
+            QString("%1 nie może przejść tak daleko w jednym ruchu.")
                 .arg(unit->getName())
+            );
+        return false;
+    }
+
+    const int movementCost = movementDistance * unit->getMoveCostPerTile();
+
+    if (movementCost > gameState.getCurrentTurnActionPoints())
+    {
+        gameState.setLastActionMessage(
+            QString("Za mało punktów akcji. Ruch %1 kosztuje %2 AP.")
+                .arg(unit->getName())
+                .arg(movementCost)
             );
         return false;
     }
@@ -188,12 +204,10 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
     sourceTile->removeUnit();
     targetTile->setUnit(unit);
 
-    gameState.consumeTurnActionPoints(1);
-    unit->consumeMovementPoints(movementCost);
-
+    gameState.consumeTurnActionPoints(movementCost);
     gameState.setSelectedPosition(targetX, targetY);
 
-    if (gameState.hasTurnActionPoints() && unit->getCurrentMovementPoints() > 0)
+    if (gameState.hasTurnActionPoints())
         calculateMoveHighlights(gameState, targetX, targetY);
     else
     {
@@ -203,14 +217,105 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
     }
 
     gameState.setLastActionMessage(
-        QString("%1 przemieścił się na pole (%2, %3). AP drużyny: %4/%5. MP jednostki: %6/%7.")
+        QString("%1 przemieścił się o %2 pola. Koszt ruchu: %3 AP. AP drużyny: %4/%5.")
             .arg(unit->getName())
-            .arg(targetX)
-            .arg(targetY)
+            .arg(movementDistance)
+            .arg(movementCost)
             .arg(gameState.getCurrentTurnActionPoints())
             .arg(gameState.getMaxTurnActionPoints())
-            .arg(unit->getCurrentMovementPoints())
-            .arg(unit->getMovementPoints())
+        );
+
+    finishActionAndMaybeEndTurn(gameState);
+    return true;
+}
+
+void BattleEngine::clearDefeatedUnitFromTile(Tile& tile) const
+{
+    Unit* unit = tile.getUnit();
+    if (!unit)
+        return;
+
+    if (!unit->isAlive())
+        tile.removeUnit();
+}
+
+bool BattleEngine::tryAttackSelectedUnit(GameState& gameState, int targetX, int targetY)
+{
+    if (!gameState.hasSelectedPosition())
+        return false;
+
+    Tile* attackerTile = gameState.getBoard().getTile(
+        gameState.getSelectedX(),
+        gameState.getSelectedY()
+        );
+    Tile* defenderTile = gameState.getBoard().getTile(targetX, targetY);
+
+    if (!attackerTile || !defenderTile || !attackerTile->isOccupied() || !defenderTile->isOccupied())
+        return false;
+
+    Unit* attacker = attackerTile->getUnit();
+    Unit* defender = defenderTile->getUnit();
+
+    if (!attacker || !defender)
+        return false;
+
+    if (attacker->getSide() == defender->getSide())
+        return false;
+
+    const int attackCost = attacker->getAttackCost();
+    if (attackCost > gameState.getCurrentTurnActionPoints())
+    {
+        gameState.setLastActionMessage(
+            QString("Za mało punktów akcji. Atak jednostki %1 kosztuje %2 AP.")
+                .arg(attacker->getName())
+                .arg(attackCost)
+            );
+        return true;
+    }
+
+    if (!m_attackResolver.canAttack(*attacker,
+                                    attackerTile->getX(),
+                                    attackerTile->getY(),
+                                    *defender,
+                                    defenderTile->getX(),
+                                    defenderTile->getY()))
+    {
+        gameState.setLastActionMessage(
+            QString("%1 nie może zaatakować tego celu - przeciwnik jest poza zasięgiem.")
+                .arg(attacker->getName())
+            );
+        return true;
+    }
+
+    const AttackResult result = m_attackResolver.resolveAttack(
+        *attacker,
+        attackerTile->getX(),
+        attackerTile->getY(),
+        *defender,
+        defenderTile->getX(),
+        defenderTile->getY(),
+        defenderTile->getTerrain()
+        );
+
+    if (!result.attackPerformed)
+    {
+        gameState.setLastActionMessage(result.message);
+        return true;
+    }
+
+    gameState.consumeTurnActionPoints(attackCost);
+    clearDefeatedUnitFromTile(*defenderTile);
+
+    gameState.clearSelectedPosition();
+    gameState.clearAvailableMovePositions();
+    gameState.clearBlockedMovePositions();
+
+    gameState.setLastActionMessage(
+        QString("%1 Koszt ataku: %2 AP. AP drużyny: %3/%4.")
+            .arg(result.message)
+            .arg(attackCost)
+            .arg(gameState.getCurrentTurnActionPoints())
+            .arg(gameState.getMaxTurnActionPoints())
         );
 
     finishActionAndMaybeEndTurn(gameState);
@@ -239,6 +344,12 @@ void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
     if (!unit)
         return;
 
+    if (gameState.hasSelectedPosition() && unit->getSide() != gameState.getCurrentSide())
+    {
+        if (tryAttackSelectedUnit(gameState, x, y))
+            return;
+    }
+
     if (!canSelectUnit(gameState, unit))
         return;
 
@@ -256,12 +367,12 @@ void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
     gameState.setSelectedPosition(x, y);
     calculateMoveHighlights(gameState, x, y);
     gameState.setLastActionMessage(
-        QString("Wybrano jednostkę: %1. AP drużyny: %2/%3. MP jednostki: %4/%5.")
+        QString("Wybrano jednostkę: %1. AP drużyny: %2/%3. Ruch: %4 pola. Koszt ataku: %5 AP.")
             .arg(unit->getName())
             .arg(gameState.getCurrentTurnActionPoints())
             .arg(gameState.getMaxTurnActionPoints())
-            .arg(unit->getCurrentMovementPoints())
             .arg(unit->getMovementPoints())
+            .arg(unit->getAttackCost())
         );
 }
 

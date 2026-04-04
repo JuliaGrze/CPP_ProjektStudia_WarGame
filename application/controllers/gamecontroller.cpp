@@ -11,7 +11,7 @@ void GameController::startGame(const GameConfig& config)
     m_state.resetTurnActionPoints();
     m_state.resetCurrentSideUnitsForTurn();
     m_state.setLastActionMessage(
-        QString("Rozpoczęła się tura Niebieskich. AP drużyny: %1.")
+        QString("Rozpoczęła się tura Niebieskich. AP drużyny: %1. Wybierz jednostkę, potem pole ruchu albo przeciwnika.")
             .arg(m_state.getCurrentTurnActionPoints())
         );
 }

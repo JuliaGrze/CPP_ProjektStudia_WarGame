@@ -180,19 +180,21 @@ void BattlePage::refreshStatistics()
                     "<div style='line-height:1.7;'>"
                     "<span style='color:#fca5a5; font-weight:700;'>HP:</span> %1 / %2<br/>"
                     "<span style='color:#fdba74; font-weight:700;'>Atak:</span> %3<br/>"
-                    "<span style='color:#86efac; font-weight:700;'>Zasięg:</span> %4<br/>"
-                    "<span style='color:#c4b5fd; font-weight:700;'>AP drużyny:</span> %5 / %6<br/>"
-                    "<span style='color:#93c5fd; font-weight:700;'>MP jednostki:</span> %7 / %8"
+                    "<span style='color:#86efac; font-weight:700;'>Zasięg ataku:</span> %4<br/>"
+                    "<span style='color:#93c5fd; font-weight:700;'>Ruch:</span> do %5 pól (1 pole = %6 AP)<br/>"
+                    "<span style='color:#fbbf24; font-weight:700;'>Koszt ataku:</span> %7 AP<br/>"
+                    "<span style='color:#c4b5fd; font-weight:700;'>AP drużyny:</span> %8 / %9"
                     "</div>"
                     )
                     .arg(unit->getHealth())
                     .arg(unit->getMaxHealth())
                     .arg(unit->getDamage())
                     .arg(unit->getRange())
+                    .arg(unit->getMovementPoints())
+                    .arg(unit->getMoveCostPerTile())
+                    .arg(unit->getAttackCost())
                     .arg(gameState.getCurrentTurnActionPoints())
                     .arg(gameState.getMaxTurnActionPoints())
-                    .arg(unit->getCurrentMovementPoints())
-                    .arg(unit->getMovementPoints())
                 );
 
             return;
@@ -210,7 +212,8 @@ void BattlePage::refreshStatistics()
         QString(
             "<div style='line-height:1.8; color:#9ca3af; text-align:center;'>"
             "AP drużyny: <b>%1 / %2</b><br/>"
-            "Kliknij jednostkę na planszy,<br/>aby zobaczyć jej statystyki."
+            "Ruch kosztuje tyle AP, ile pól przejdziesz.<br/>"
+            "Kliknij swoją jednostkę, a potem puste pole albo przeciwnika."
             "</div>"
             )
             .arg(gameState.getCurrentTurnActionPoints())
@@ -239,9 +242,5 @@ void BattlePage::resizeEvent(QResizeEvent *event)
 void BattlePage::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-
-    QTimer::singleShot(0, this, [this]()
-                       {
-                           redrawBoard();
-                       });
+    redrawBoard();
 }
