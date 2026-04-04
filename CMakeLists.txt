@@ -47,6 +47,16 @@ qt_add_executable(WarGame
 
     application/controllers/gamecontroller.h application/controllers/gamecontroller.cpp
     application/engine/battleengine.h application/engine/battleengine.cpp
+    application/models/interfaces/IUnit.h
+    application/models/player.h application/models/player.cpp
+    application/controllers/interfaces/Iplayercontroller.h
+    application/controllers/humancontroller.h application/controllers/humancontroller.cpp
+    application/controllers/aicontroller.h application/controllers/aicontroller.cpp
+    application/engine/iattackstrategy.h
+    application/engine/defaultattackstrategy.h
+    application/engine/defaultattackstrategy.cpp
+    application/engine/attackresolver.h application/engine/attackresolver.cpp
+
 )
 
 target_link_libraries(WarGame

@@ -1,7 +1,9 @@
 #include "gamestate.h"
 
 GameState::GameState()
-    : m_board(10, 10)
+    : m_board(10, 10),
+    m_playerTeam("Niebiescy", TeamSide::Player),
+    m_enemyTeam("Czerwoni", TeamSide::Enemy)
 {
 }
 
@@ -60,6 +62,16 @@ void GameState::setCurrentSide(TeamSide side)
     m_currentSide = side;
 }
 
+Team& GameState::getCurrentTeam()
+{
+    return m_currentSide == TeamSide::Player ? m_playerTeam : m_enemyTeam;
+}
+
+const Team& GameState::getCurrentTeam() const
+{
+    return m_currentSide == TeamSide::Player ? m_playerTeam : m_enemyTeam;
+}
+
 void GameState::nextTurn()
 {
     if (m_currentSide == TeamSide::Player)
@@ -73,6 +85,13 @@ void GameState::nextTurn()
     clearSelectedPosition();
     clearAvailableMovePositions();
     clearBlockedMovePositions();
+
+    resetTurnActionPoints();
+    resetCurrentSideUnitsForTurn();
+
+    m_lastActionMessage = QString("Rozpoczęła się tura %1. AP drużyny: %2.")
+                              .arg(m_currentSide == TeamSide::Player ? "Niebieskich" : "Czerwonych")
+                              .arg(m_currentTurnActionPoints);
 }
 
 void GameState::setSelectedPosition(int x, int y)
@@ -152,4 +171,55 @@ bool GameState::isBlockedMovePosition(int x, int y) const
     }
 
     return false;
+}
+
+void GameState::setLastActionMessage(const QString& message)
+{
+    m_lastActionMessage = message;
+}
+
+QString GameState::getLastActionMessage() const
+{
+    return m_lastActionMessage;
+}
+
+int GameState::getCurrentTurnActionPoints() const
+{
+    return m_currentTurnActionPoints;
+}
+
+int GameState::getMaxTurnActionPoints() const
+{
+    return m_maxTurnActionPoints;
+}
+
+bool GameState::hasTurnActionPoints() const
+{
+    return m_currentTurnActionPoints > 0;
+}
+
+void GameState::consumeTurnActionPoints(int amount)
+{
+    if (amount <= 0)
+        return;
+
+    m_currentTurnActionPoints -= amount;
+    if (m_currentTurnActionPoints < 0)
+        m_currentTurnActionPoints = 0;
+}
+
+void GameState::resetTurnActionPoints()
+{
+    m_currentTurnActionPoints = m_maxTurnActionPoints;
+}
+
+void GameState::resetCurrentSideUnitsForTurn()
+{
+    const auto units = getCurrentTeam().getUnits();
+
+    for (const auto& unit : units)
+    {
+        if (unit && unit->isAlive())
+            unit->resetTurnResources();
+    }
 }

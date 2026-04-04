@@ -13,7 +13,8 @@ Unit::Unit(const QString& name,
     m_maxHealth(health),
     m_damage(damage),
     m_range(range),
-    m_movementPoints(movementPoints)
+    m_movementPoints(movementPoints),
+    m_currentMovementPoints(movementPoints)
 {
 }
 
@@ -52,6 +53,11 @@ int Unit::getMovementPoints() const
     return m_movementPoints;
 }
 
+int Unit::getCurrentMovementPoints() const
+{
+    return m_currentMovementPoints;
+}
+
 bool Unit::isAlive() const
 {
     return m_health > 0;
@@ -71,4 +77,17 @@ void Unit::heal(int amount)
         return;
 
     m_health = std::min(m_maxHealth, m_health + amount);
+}
+
+void Unit::consumeMovementPoints(int amount)
+{
+    if (amount <= 0)
+        return;
+
+    m_currentMovementPoints = std::max(0, m_currentMovementPoints - amount);
+}
+
+void Unit::resetTurnResources()
+{
+    m_currentMovementPoints = m_movementPoints;
 }

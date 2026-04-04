@@ -7,6 +7,7 @@
 #include <QQueue>
 #include <QSet>
 #include <QPair>
+#include <cmath>
 
 namespace
 {
@@ -28,7 +29,13 @@ bool BattleEngine::canSelectUnit(const GameState& gameState, const Unit* unit) c
     if (!unit)
         return false;
 
-    return unit->getSide() == gameState.getCurrentSide();
+    if (!unit->isAlive())
+        return false;
+
+    if (unit->getSide() != gameState.getCurrentSide())
+        return false;
+
+    return gameState.hasTurnActionPoints();
 }
 
 int BattleEngine::calculateDistance(int x1, int y1, int x2, int y2) const
@@ -50,7 +57,15 @@ void BattleEngine::calculateMoveHighlights(GameState& gameState, int startX, int
     }
 
     const Unit* unit = startTile->getUnit();
-    const int moveRange = unit->getMovementPoints();
+
+    if (!gameState.hasTurnActionPoints() || unit->getCurrentMovementPoints() <= 0)
+    {
+        gameState.clearAvailableMovePositions();
+        gameState.clearBlockedMovePositions();
+        return;
+    }
+
+    const int moveRange = unit->getCurrentMovementPoints();
 
     QQueue<MoveNode> queue;
     QSet<QString> visited;
@@ -151,13 +166,61 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
     if (!unit)
         return false;
 
+    if (!gameState.hasTurnActionPoints())
+    {
+        gameState.setLastActionMessage("Drużyna nie ma już punktów akcji w tej turze.");
+        return false;
+    }
+
+    const int movementCost = calculateDistance(
+        sourceTile->getX(), sourceTile->getY(), targetX, targetY
+        );
+
+    if (movementCost > unit->getCurrentMovementPoints())
+    {
+        gameState.setLastActionMessage(
+            QString("%1 nie ma wystarczającej liczby punktów ruchu.")
+                .arg(unit->getName())
+            );
+        return false;
+    }
+
     sourceTile->removeUnit();
     targetTile->setUnit(unit);
 
-    gameState.setSelectedPosition(targetX, targetY);
-    calculateMoveHighlights(gameState, targetX, targetY);
+    gameState.consumeTurnActionPoints(1);
+    unit->consumeMovementPoints(movementCost);
 
+    gameState.setSelectedPosition(targetX, targetY);
+
+    if (gameState.hasTurnActionPoints() && unit->getCurrentMovementPoints() > 0)
+        calculateMoveHighlights(gameState, targetX, targetY);
+    else
+    {
+        gameState.clearSelectedPosition();
+        gameState.clearAvailableMovePositions();
+        gameState.clearBlockedMovePositions();
+    }
+
+    gameState.setLastActionMessage(
+        QString("%1 przemieścił się na pole (%2, %3). AP drużyny: %4/%5. MP jednostki: %6/%7.")
+            .arg(unit->getName())
+            .arg(targetX)
+            .arg(targetY)
+            .arg(gameState.getCurrentTurnActionPoints())
+            .arg(gameState.getMaxTurnActionPoints())
+            .arg(unit->getCurrentMovementPoints())
+            .arg(unit->getMovementPoints())
+        );
+
+    finishActionAndMaybeEndTurn(gameState);
     return true;
+}
+
+void BattleEngine::finishActionAndMaybeEndTurn(GameState& gameState)
+{
+    if (!gameState.hasTurnActionPoints())
+        endTurn(gameState);
 }
 
 void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
@@ -173,6 +236,9 @@ void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
     }
 
     Unit* unit = tile->getUnit();
+    if (!unit)
+        return;
+
     if (!canSelectUnit(gameState, unit))
         return;
 
@@ -183,11 +249,20 @@ void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
         gameState.clearSelectedPosition();
         gameState.clearAvailableMovePositions();
         gameState.clearBlockedMovePositions();
+        gameState.setLastActionMessage("Odznaczono jednostkę.");
         return;
     }
 
     gameState.setSelectedPosition(x, y);
     calculateMoveHighlights(gameState, x, y);
+    gameState.setLastActionMessage(
+        QString("Wybrano jednostkę: %1. AP drużyny: %2/%3. MP jednostki: %4/%5.")
+            .arg(unit->getName())
+            .arg(gameState.getCurrentTurnActionPoints())
+            .arg(gameState.getMaxTurnActionPoints())
+            .arg(unit->getCurrentMovementPoints())
+            .arg(unit->getMovementPoints())
+        );
 }
 
 void BattleEngine::endTurn(GameState& gameState)

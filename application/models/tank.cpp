@@ -1,7 +1,7 @@
 #include "tank.h"
 
 Tank::Tank(TeamSide side)
-    : Unit("Czołg", side, 180, 40, 3, 2)
+    : Unit("Czolg", side, 180, 40, 3, 2)
 {
 }
 

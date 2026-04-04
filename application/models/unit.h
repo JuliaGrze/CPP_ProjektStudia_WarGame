@@ -23,11 +23,16 @@ public:
     int getMaxHealth() const;
     int getDamage() const;
     int getRange() const;
+
     int getMovementPoints() const;
+    int getCurrentMovementPoints() const;
 
     bool isAlive() const;
     void takeDamage(int amount);
     void heal(int amount);
+
+    void consumeMovementPoints(int amount);
+    void resetTurnResources();
 
     virtual QString getUnitType() const = 0;
 
@@ -38,7 +43,9 @@ protected:
     int m_maxHealth;
     int m_damage;
     int m_range;
+
     int m_movementPoints;
+    int m_currentMovementPoints;
 };
 
 #endif // UNIT_H

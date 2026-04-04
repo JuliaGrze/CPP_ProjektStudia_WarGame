@@ -8,6 +8,12 @@ void GameController::startGame(const GameConfig& config)
 {
     m_config = config;
     m_state = GameSetupService::createGame(config);
+    m_state.resetTurnActionPoints();
+    m_state.resetCurrentSideUnitsForTurn();
+    m_state.setLastActionMessage(
+        QString("Rozpoczęła się tura Niebieskich. AP drużyny: %1.")
+            .arg(m_state.getCurrentTurnActionPoints())
+        );
 }
 
 void GameController::handleTileClick(int x, int y)

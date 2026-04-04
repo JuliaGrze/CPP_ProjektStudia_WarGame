@@ -12,6 +12,7 @@
 #include "../application/models/enums/teamside.h"
 #include "../application/services/battleboardservice.h"
 #include "../config/gameconfig.h"
+#include "../application/models/player.h"
 
 BattlePage::BattlePage(QWidget *parent)
     : QWidget(parent)
@@ -123,10 +124,7 @@ void BattlePage::refreshStatistics()
     const QString currentSideText = isPlayerTurn ? "NIEBIESCY" : "CZERWONI";
     const QString currentSideColor = isPlayerTurn ? "#60a5fa" : "#f87171";
 
-    ui->labelBattleLog->setText(
-        "Kliknij swoją jednostkę, aby ją wybrać. "
-        "Zielone pola pokazują, gdzie możesz wejść, a czerwone pola są w zasięgu, ale są zablokowane."
-        );
+    ui->labelBattleLog->setText(gameState.getLastActionMessage());
 
     ui->labelTeamsInfo->setText(
         QString(
@@ -137,12 +135,16 @@ void BattlePage::refreshStatistics()
             "<br/><br/>"
             "<span style='color:#d1d5db;'>Aktualny ruch:</span> "
             "<span style='color:%3; font-weight:800; font-size:16px;'>%4</span>"
+            "<br/>"
+            "<span style='color:#fbbf24; font-weight:700;'>AP drużyny:</span> %5 / %6"
             "</div>"
             )
             .arg(playerCount)
             .arg(enemyCount)
             .arg(currentSideColor)
             .arg(currentSideText)
+            .arg(gameState.getCurrentTurnActionPoints())
+            .arg(gameState.getMaxTurnActionPoints())
         );
 
     if (gameState.hasSelectedPosition())
@@ -179,20 +181,18 @@ void BattlePage::refreshStatistics()
                     "<span style='color:#fca5a5; font-weight:700;'>HP:</span> %1 / %2<br/>"
                     "<span style='color:#fdba74; font-weight:700;'>Atak:</span> %3<br/>"
                     "<span style='color:#86efac; font-weight:700;'>Zasięg:</span> %4<br/>"
-                    "<span style='color:#c4b5fd; font-weight:700;'>Ruch:</span> %5"
+                    "<span style='color:#c4b5fd; font-weight:700;'>AP drużyny:</span> %5 / %6<br/>"
+                    "<span style='color:#93c5fd; font-weight:700;'>MP jednostki:</span> %7 / %8"
                     "</div>"
                     )
                     .arg(unit->getHealth())
                     .arg(unit->getMaxHealth())
                     .arg(unit->getDamage())
                     .arg(unit->getRange())
+                    .arg(gameState.getCurrentTurnActionPoints())
+                    .arg(gameState.getMaxTurnActionPoints())
+                    .arg(unit->getCurrentMovementPoints())
                     .arg(unit->getMovementPoints())
-                );
-
-            ui->labelBattleLog->setText(
-                QString("Wybrano jednostkę: %1 (%2). Zielone pola oznaczają dozwolony ruch, czerwone pola są niedostępne.")
-                    .arg(unit->getName())
-                    .arg(isPlayerUnit ? "Niebiescy" : "Czerwoni")
                 );
 
             return;
@@ -207,9 +207,14 @@ void BattlePage::refreshStatistics()
         );
 
     ui->labelUnitStats->setText(
-        "<div style='line-height:1.8; color:#9ca3af; text-align:center;'>"
-        "Kliknij jednostkę na planszy,<br/>aby zobaczyć jej statystyki."
-        "</div>"
+        QString(
+            "<div style='line-height:1.8; color:#9ca3af; text-align:center;'>"
+            "AP drużyny: <b>%1 / %2</b><br/>"
+            "Kliknij jednostkę na planszy,<br/>aby zobaczyć jej statystyki."
+            "</div>"
+            )
+            .arg(gameState.getCurrentTurnActionPoints())
+            .arg(gameState.getMaxTurnActionPoints())
         );
 }
 

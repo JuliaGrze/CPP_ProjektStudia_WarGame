@@ -5,7 +5,6 @@
 #include "../models/enums/terraintype.h"
 #include "../helpers/unitplacementhelper.h"
 
-
 GameState GameSetupService::createGame(const GameConfig& config)
 {
     GameState state;

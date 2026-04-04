@@ -7,6 +7,7 @@
 
 #include <QVector>
 #include <QPair>
+#include <QString>
 
 class GameState
 {
@@ -47,6 +48,21 @@ public:
     void clearBlockedMovePositions();
     bool isBlockedMovePosition(int x, int y) const;
 
+    void setLastActionMessage(const QString& message);
+    QString getLastActionMessage() const;
+
+    int getCurrentTurnActionPoints() const;
+    int getMaxTurnActionPoints() const;
+    bool hasTurnActionPoints() const;
+    void consumeTurnActionPoints(int amount = 1);
+    void resetTurnActionPoints();
+
+    void resetCurrentSideUnitsForTurn();
+
+private:
+    Team& getCurrentTeam();
+    const Team& getCurrentTeam() const;
+
 private:
     Board m_board;
     Team m_playerTeam;
@@ -59,6 +75,11 @@ private:
 
     QVector<QPair<int, int>> m_availableMovePositions;
     QVector<QPair<int, int>> m_blockedMovePositions;
+
+    QString m_lastActionMessage = "Kliknij swoją jednostkę, aby ją wybrać.";
+
+    int m_maxTurnActionPoints = 4;
+    int m_currentTurnActionPoints = 4;
 };
 
 #endif // GAMESTATE_H
