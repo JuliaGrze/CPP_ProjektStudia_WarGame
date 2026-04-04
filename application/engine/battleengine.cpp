@@ -4,7 +4,24 @@
 #include "../models/unit.h"
 #include "../models/enums/terraintype.h"
 
-#include <cmath>
+#include <QQueue>
+#include <QSet>
+#include <QPair>
+
+namespace
+{
+struct MoveNode
+{
+    int x;
+    int y;
+    int steps;
+};
+
+QString makeKey(int x, int y)
+{
+    return QString("%1_%2").arg(x).arg(y);
+}
+}
 
 bool BattleEngine::canSelectUnit(const GameState& gameState, const Unit* unit) const
 {
@@ -19,12 +36,12 @@ int BattleEngine::calculateDistance(int x1, int y1, int x2, int y2) const
     return std::abs(x1 - x2) + std::abs(y1 - y2);
 }
 
-void BattleEngine::calculateMoveHighlights(GameState& gameState, int x, int y) const
+void BattleEngine::calculateMoveHighlights(GameState& gameState, int startX, int startY) const
 {
     QVector<QPair<int, int>> availablePositions;
     QVector<QPair<int, int>> blockedPositions;
 
-    const Tile* startTile = gameState.getBoard().getTile(x, y);
+    const Tile* startTile = gameState.getBoard().getTile(startX, startY);
     if (!startTile || !startTile->isOccupied() || !startTile->getUnit())
     {
         gameState.clearAvailableMovePositions();
@@ -35,27 +52,67 @@ void BattleEngine::calculateMoveHighlights(GameState& gameState, int x, int y) c
     const Unit* unit = startTile->getUnit();
     const int moveRange = unit->getMovementPoints();
 
-    for (int row = 0; row < gameState.getBoard().getHeight(); ++row)
-    {
-        for (int col = 0; col < gameState.getBoard().getWidth(); ++col)
+    QQueue<MoveNode> queue;
+    QSet<QString> visited;
+    QSet<QString> availableSet;
+    QSet<QString> blockedSet;
+
+    queue.enqueue({ startX, startY, 0 });
+    visited.insert(makeKey(startX, startY));
+
+    const int directions[4][2] =
         {
-            if (col == x && row == y)
+            { 1, 0 },
+            { -1, 0 },
+            { 0, 1 },
+            { 0, -1 }
+        };
+
+    while (!queue.isEmpty())
+    {
+        MoveNode current = queue.dequeue();
+
+        if (current.steps >= moveRange)
+            continue;
+
+        for (const auto& direction : directions)
+        {
+            const int nextX = current.x + direction[0];
+            const int nextY = current.y + direction[1];
+
+            if (!gameState.getBoard().isInsideBoard(nextX, nextY))
                 continue;
 
-            if (calculateDistance(x, y, col, row) > moveRange)
+            const QString key = makeKey(nextX, nextY);
+            const Tile* nextTile = gameState.getBoard().getTile(nextX, nextY);
+            if (!nextTile)
                 continue;
 
-            const Tile* tile = gameState.getBoard().getTile(col, row);
-            if (!tile)
+            const bool isPlain = nextTile->getTerrain() == TerrainType::Plain;
+            const bool isOccupied = nextTile->isOccupied();
+
+            if (!isPlain || isOccupied)
+            {
+                if (!blockedSet.contains(key))
+                {
+                    blockedPositions.append({ nextX, nextY });
+                    blockedSet.insert(key);
+                }
+                continue;
+            }
+
+            if (visited.contains(key))
                 continue;
 
-            const bool isPlain = tile->getTerrain() == TerrainType::Plain;
-            const bool isFree = !tile->isOccupied();
+            visited.insert(key);
 
-            if (isPlain && isFree)
-                availablePositions.append({col, row});
-            else
-                blockedPositions.append({col, row});
+            if (!availableSet.contains(key))
+            {
+                availablePositions.append({ nextX, nextY });
+                availableSet.insert(key);
+            }
+
+            queue.enqueue({ nextX, nextY, current.steps + 1 });
         }
     }
 
