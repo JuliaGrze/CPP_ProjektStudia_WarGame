@@ -28,6 +28,18 @@ qt_add_executable(WarGame
     pages/teamconfigdialog.ui
     resources.qrc
     pages/battlepage.h pages/battlepage.cpp pages/battlepage.ui
+    application/models/gamestate.h application/models/gamestate.cpp
+    application/models/board.h application/models/board.cpp
+    application/models/tile.h application/models/tile.cpp
+    application/models/team.h application/models/team.cpp
+    application/models/unit.h application/models/unit.cpp
+    application/models/infantry.h application/models/infantry.cpp
+    application/models/tank.h application/models/tank.cpp
+    application/models/artillery.h application/models/artillery.cpp
+    application/models/medic.h application/models/medic.cpp
+    application/models/enums/terraintype.h
+    application/models/enums/maptype.h
+    application/models/enums/teamside.h
 )
 
 target_link_libraries(WarGame

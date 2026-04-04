@@ -3,7 +3,9 @@
 
 #include <QWidget>
 #include <QResizeEvent>
+#include <QShowEvent>
 #include "../config/gameconfig.h"
+#include "../application/models/gamestate.h"
 
 namespace Ui {
 class BattlePage;
@@ -18,6 +20,8 @@ public:
     ~BattlePage();
 
     void setConfiguration(const GameConfig& config);
+    void setGameState(const GameState& gameState);
+
     void drawBoard();
     void updateTurnInfo();
     void refreshStatistics();
@@ -27,10 +31,12 @@ signals:
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     Ui::BattlePage *ui;
     GameConfig m_config;
+    GameState m_gameState;
     bool m_isDrawingBoard = false;
 };
 

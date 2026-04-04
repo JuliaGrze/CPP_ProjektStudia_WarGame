@@ -12,5 +12,7 @@
         <file>images/units/soldier_red.png</file>
         <file>images/units/tank_blue.png</file>
         <file>images/units/tank_red.png</file>
+        <file>images/units/artillery_blue.png</file>
+        <file>images/units/artillery_red.png</file>
     </qresource>
 </RCC>

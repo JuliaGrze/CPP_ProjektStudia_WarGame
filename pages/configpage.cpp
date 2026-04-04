@@ -5,6 +5,7 @@
 
 #include <QListView>
 #include <QMessageBox>
+#include <QPushButton>
 
 ConfigPage::ConfigPage(QWidget *parent)
     : QWidget(parent)
@@ -79,20 +80,32 @@ GameConfig ConfigPage::saveConfiguration() const
     return config;
 }
 
+GameConfig ConfigPage::getConfiguration() const
+{
+    return saveConfiguration();
+}
+
 bool ConfigPage::validateConfiguration() const
 {
-    GameConfig config = saveConfiguration();
+    const GameConfig config = saveConfiguration();
     return config.isValid();
 }
 
 void ConfigPage::onStartClicked()
 {
-    if (!validateConfiguration())
+    const GameConfig config = saveConfiguration();
+
+    if (!config.isValid())
     {
-        QMessageBox::warning(this, "Błąd konfiguracji",
-                             "Wybierz mapę, rozmiar planszy oraz skonfiguruj obie drużyny.");
+        QMessageBox::warning(
+            this,
+            "Błąd konfiguracji",
+            "Konfiguracja gry jest niepoprawna.\n\n"
+            "Sprawdź, czy obie drużyny mają jednostki "
+            "oraz czy mapa i rozmiar planszy są poprawnie ustawione."
+            );
         return;
     }
 
-    emit startClicked(saveConfiguration());
+    emit startClicked(config);
 }

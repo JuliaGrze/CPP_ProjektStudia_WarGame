@@ -18,6 +18,7 @@ public:
     ~ConfigPage();
 
     GameConfig saveConfiguration() const;
+    GameConfig getConfiguration() const;
     bool validateConfiguration() const;
 
 signals:
