@@ -2,6 +2,7 @@
 #include "ui_configpage.h"
 #include "teamconfigdialog.h"
 #include "../config/gameconfigdata.h"
+#include "../application/services/gameconfigvalidationservice.h"
 
 #include <QListView>
 #include <QMessageBox>
@@ -94,54 +95,15 @@ bool ConfigPage::validateConfiguration() const
 void ConfigPage::onStartClicked()
 {
     const GameConfig config = saveConfiguration();
+    const GameConfigValidationResult validationResult =
+        GameConfigValidationService::validate(config);
 
-    if (!config.isValid())
+    if (!validationResult.isValid)
     {
         QMessageBox::warning(
             this,
             "Błąd konfiguracji",
-            "Konfiguracja gry jest niepoprawna.\n\n"
-            "Sprawdź, czy obie drużyny mają jednostki "
-            "oraz czy mapa i rozmiar planszy są poprawnie ustawione."
-            );
-        return;
-    }
-
-    const int playerUnits = config.playerTeam.totalUnits();
-    const int enemyUnits = config.enemyTeam.totalUnits();
-
-    const int maxUnitsPerTeam = config.mapSize * 3;
-
-    if (playerUnits > maxUnitsPerTeam || enemyUnits > maxUnitsPerTeam)
-    {
-        QMessageBox::warning(
-            this,
-            "Za dużo jednostek",
-            QString("Na wybranej planszy jedna drużyna ma zbyt dużo jednostek.\n\n"
-                    "Maksymalna liczba jednostek na drużynę dla tej planszy: %1\n"
-                    "Twoja drużyna: %2\n"
-                    "Drużyna przeciwna: %3")
-                .arg(maxUnitsPerTeam)
-                .arg(playerUnits)
-                .arg(enemyUnits)
-            );
-        return;
-    }
-
-    const int maxAllowedDifference = 3;
-
-    if (std::abs(playerUnits - enemyUnits) > maxAllowedDifference)
-    {
-        QMessageBox::warning(
-            this,
-            "Nierówne drużyny",
-            QString("Różnica w liczbie jednostek między drużynami jest zbyt duża.\n\n"
-                    "Maksymalna dozwolona różnica: %1\n"
-                    "Twoja drużyna: %2\n"
-                    "Drużyna przeciwna: %3")
-                .arg(maxAllowedDifference)
-                .arg(playerUnits)
-                .arg(enemyUnits)
+            validationResult.message
             );
         return;
     }

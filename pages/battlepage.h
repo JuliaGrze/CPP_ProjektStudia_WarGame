@@ -22,7 +22,6 @@ public:
     void setConfiguration(const GameConfig& config);
     void setGameState(const GameState& gameState);
 
-    void drawBoard();
     void updateTurnInfo();
     void refreshStatistics();
 
@@ -34,6 +33,8 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
+    void redrawBoard();
+
     Ui::BattlePage *ui;
     GameConfig m_config;
     GameState m_gameState;

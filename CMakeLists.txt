@@ -41,6 +41,9 @@ qt_add_executable(WarGame
     application/models/enums/maptype.h
     application/models/enums/teamside.h
     application/helpers/unitplacementhelper.h application/helpers/unitplacementhelper.cpp
+    application/services/gamesetupservice.h application/services/gamesetupservice.cpp
+    application/services/gameconfigvalidationservice.h application/services/gameconfigvalidationservice.cpp
+    application/services/battleboardservice.h application/services/battleboardservice.cpp
 )
 
 target_link_libraries(WarGame

@@ -2,8 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "config/gameconfig.h"
-#include "application/models/gamestate.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -22,9 +20,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
-private:
-    GameState createTestGameState(const GameConfig& config);
 
 private:
     Ui::MainWindow *ui;
