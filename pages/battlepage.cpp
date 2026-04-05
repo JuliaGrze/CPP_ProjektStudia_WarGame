@@ -31,11 +31,9 @@ QString terrainToDisplayName(TerrainType terrain)
 
 QString buildDefaultTileInfoText()
 {
-    return "Teren: -\n"
-           "Koszt ruchu: -\n"
-           "Osłona: -\n"
-           "Bonus zasięgu: -\n"
-           "Przechodnie: -";
+    return "Brak wybranego pola.\n"
+           "Kliknij swoją jednostkę,\n"
+           "aby zobaczyć informacje o terenie.";
 }
 
 QString buildTileInfoText(const Tile* tile)
@@ -66,11 +64,13 @@ BattlePage::BattlePage(QWidget *parent)
     ui->setupUi(this);
 
     ui->labelLegend->setText(
-        "Żółte - wybrana jednostka\n"
-        "Zielone - ruch\n"
-        "Fioletowe - atak\n"
-        "Niebieskie - leczenie\n"
-        "Szare - blokada"
+        "<div style='line-height:1.6;'>"
+        "<span style='color:#fbbf24; font-weight:700;'>Żółte</span> - wybrana jednostka<br/>"
+        "<span style='color:#22c55e; font-weight:700;'>Zielone</span> - ruch<br/>"
+        "<span style='color:#a855f7; font-weight:700;'>Fioletowe</span> - atak<br/>"
+        "<span style='color:#38bdf8; font-weight:700;'>Niebieskie</span> - leczenie<br/>"
+        "<span style='color:#9ca3af; font-weight:700;'>Szare</span> - blokada"
+        "</div>"
         );
 
     ui->labelTileInfo->setText(buildDefaultTileInfoText());

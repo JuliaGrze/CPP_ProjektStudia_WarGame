@@ -231,6 +231,9 @@ Ruch: -</string>
                <string>Brak wybranego pola.
 Kliknij swoją jednostkę, aby zobaczyć informacje o terenie.</string>
               </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
              </widget>
             </item>
             <item>
@@ -321,6 +324,9 @@ Zielone - ruch
 Fioletowe - atak
 Niebieskie - leczenie
 Szare - blokada</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
