@@ -49,6 +49,18 @@ public:
     void clearBlockedMovePositions();
     bool isBlockedMovePosition(int x, int y) const;
 
+    void setAttackablePositions(const QVector<QPair<int, int>>& positions);
+    const QVector<QPair<int, int>>& getAttackablePositions() const;
+    void clearAttackablePositions();
+    bool isAttackablePosition(int x, int y) const;
+
+    void setHealablePositions(const QVector<QPair<int, int>>& positions);
+    const QVector<QPair<int, int>>& getHealablePositions() const;
+    void clearHealablePositions();
+    bool isHealablePosition(int x, int y) const;
+
+    void clearAllHighlights();
+
     void setLastActionMessage(const QString& message);
     QString getLastActionMessage() const;
 
@@ -83,6 +95,8 @@ private:
 
     QVector<QPair<int, int>> m_availableMovePositions;
     QVector<QPair<int, int>> m_blockedMovePositions;
+    QVector<QPair<int, int>> m_attackablePositions;
+    QVector<QPair<int, int>> m_healablePositions;
 
     QString m_lastActionMessage = "Kliknij swoją jednostkę, aby ją wybrać.";
     QStringList m_battleLog;

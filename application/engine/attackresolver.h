@@ -14,6 +14,8 @@ struct AttackResult
     int hitChance = 0;
     int roll = 0;
     int damageDealt = 0;
+    int targetHealthAfter = 0;
+    int targetMaxHealth = 0;
     QString message;
 };
 

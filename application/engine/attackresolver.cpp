@@ -108,11 +108,13 @@ AttackResult AttackResolver::resolveAttack(Unit& attacker,
     result.hitChance = calculateHitChance(attacker, defender, distance, attackerTerrain, defenderTerrain);
     result.roll = QRandomGenerator::global()->bounded(1, 101);
     result.attackPerformed = true;
+    result.targetMaxHealth = defender.getMaxHealth();
 
     if (result.roll > result.hitChance)
     {
         result.hit = false;
-        result.message = QString("%1 zaatakował %2, ale spudłował (%3/%4).")
+        result.targetHealthAfter = defender.getHealth();
+        result.message = QString("%1 zaatakował %2, ale spudłował. Rzut: %3, potrzebne: %4 lub mniej.")
                              .arg(attacker.getName())
                              .arg(defender.getName())
                              .arg(result.roll)
@@ -124,20 +126,25 @@ AttackResult AttackResolver::resolveAttack(Unit& attacker,
     result.damageDealt = calculateDamage(attacker, defender, defenderTerrain);
     defender.takeDamage(result.damageDealt);
     result.targetDestroyed = !defender.isAlive();
+    result.targetHealthAfter = defender.getHealth();
 
     if (result.targetDestroyed)
     {
-        result.message = QString("%1 trafił %2 za %3 obrażeń i zniszczył jednostkę.")
-                             .arg(attacker.getName())
-                             .arg(defender.getName())
-                             .arg(result.damageDealt);
-    }
-    else
-    {
-        result.message = QString("%1 trafił %2 za %3 obrażeń (%4/%5).")
+        result.message = QString("%1 trafił %2 za %3 obrażeń i zniszczył jednostkę. Rzut: %4/%5.")
                              .arg(attacker.getName())
                              .arg(defender.getName())
                              .arg(result.damageDealt)
+                             .arg(result.roll)
+                             .arg(result.hitChance);
+    }
+    else
+    {
+        result.message = QString("%1 trafił %2 za %3 obrażeń. Pozostało %4/%5 HP. Rzut: %6/%7.")
+                             .arg(attacker.getName())
+                             .arg(defender.getName())
+                             .arg(result.damageDealt)
+                             .arg(result.targetHealthAfter)
+                             .arg(result.targetMaxHealth)
                              .arg(result.roll)
                              .arg(result.hitChance);
     }

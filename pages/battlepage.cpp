@@ -191,6 +191,10 @@ void BattlePage::refreshStatistics()
                     .arg(teamText)
                 );
 
+            const int moveCount = gameState.getAvailableMovePositions().size();
+            const int attackCount = gameState.getAttackablePositions().size();
+            const int healCount = gameState.getHealablePositions().size();
+
             ui->labelUnitStats->setText(
                 QString(
                     "<div style='line-height:1.7;'>"
@@ -202,10 +206,14 @@ void BattlePage::refreshStatistics()
                     "<span style='color:#c4b5fd; font-weight:700;'>Pancerz:</span> %8<br/>"
                     "<span style='color:#f9a8d4; font-weight:700;'>Celność:</span> %9<br/>"
                     "<span style='color:#a7f3d0; font-weight:700;'>Unik:</span> %10<br/>"
-                    "<span style='color:#fcd34d; font-weight:700;'>Leczenie:</span> %11<br/>"
+                    "<span style='color:#38bdf8; font-weight:700;'>Leczenie:</span> %11<br/>"
                     "<span style='color:#d1d5db;'>Ruch w turze:</span> %12<br/>"
                     "<span style='color:#d1d5db;'>Akcja w turze:</span> %13<br/>"
-                    "<span style='color:#cbd5e1;'>AP drużyny:</span> %14 / %15"
+                    "<span style='color:#22c55e; font-weight:700;'>Zielone pola:</span> %14<br/>"
+                    "<span style='color:#ef4444; font-weight:700;'>Czerwone cele:</span> %15<br/>"
+                    "<span style='color:#38bdf8; font-weight:700;'>Niebieskie cele:</span> %16<br/>"
+                    "<span style='color:#cbd5e1;'>AP drużyny:</span> %17 / %18<br/><br/>"
+                    "<span style='color:#9ca3af;'>Jak grać:</span> kliknij jednostkę, potem zielone pole, czerwonego przeciwnika albo niebieskiego sojusznika."
                     "</div>"
                     )
                     .arg(unit->getHealth())
@@ -221,6 +229,9 @@ void BattlePage::refreshStatistics()
                     .arg(unit->canHeal() ? QString::number(unit->getHealAmount()) : "-")
                     .arg(unit->hasMovedThisTurn() ? "tak" : "nie")
                     .arg(unit->hasActedThisTurn() ? "tak" : "nie")
+                    .arg(moveCount)
+                    .arg(attackCount)
+                    .arg(healCount)
                     .arg(gameState.getCurrentTurnActionPoints())
                     .arg(gameState.getMaxTurnActionPoints())
                 );

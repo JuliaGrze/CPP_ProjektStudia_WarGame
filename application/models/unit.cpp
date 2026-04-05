@@ -90,30 +90,12 @@ bool Unit::hasActedThisTurn() const { return m_hasActedThisTurn; }
 
 bool Unit::canMoveNow() const
 {
-    if (!isAlive())
-        return false;
-
-    if (m_hasMovedThisTurn)
-        return false;
-
-    if (m_hasActedThisTurn && !m_canMoveAfterAttack)
-        return false;
-
-    return true;
+    return isAlive();
 }
 
 bool Unit::canAttackNow() const
 {
-    if (!isAlive())
-        return false;
-
-    if (m_hasActedThisTurn)
-        return false;
-
-    if (m_hasMovedThisTurn && !m_canAttackAfterMove)
-        return false;
-
-    return true;
+    return isAlive();
 }
 
 bool Unit::canHealNow() const

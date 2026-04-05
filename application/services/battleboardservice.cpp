@@ -29,7 +29,7 @@ QString getTerrainPath(TerrainType terrain)
     case TerrainType::Water:
         return ":/icons/images/terrain/ocean.png";
     case TerrainType::Building:
-        return ":/icons/images/terrain/mountain.png"; // tymczasowo
+        return ":/icons/images/terrain/mountain.png";
     }
 
     return ":/icons/images/terrain/grass.png";
@@ -76,7 +76,11 @@ void clearGrid(QGridLayout* grid)
     }
 }
 
-QString buildOverlayStyle(bool isSelected, bool isAvailableMove, bool isBlockedMove)
+QString buildOverlayStyle(bool isSelected,
+                          bool isAvailableMove,
+                          bool isBlockedMove,
+                          bool isAttackable,
+                          bool isHealable)
 {
     QString borderStyle = "border: none;";
     QString backgroundStyle = "background-color: transparent;";
@@ -86,10 +90,20 @@ QString buildOverlayStyle(bool isSelected, bool isAvailableMove, bool isBlockedM
         borderStyle = "border: 5px solid rgb(22, 163, 74);";
         backgroundStyle = "background-color: rgba(34, 197, 94, 120);";
     }
+    else if (isAttackable)
+    {
+        borderStyle = "border: 5px solid rgb(147, 51, 234);";
+        backgroundStyle = "background-color: rgba(168, 85, 247, 170);";
+    }
+    else if (isHealable)
+    {
+        borderStyle = "border: 5px solid rgb(14, 165, 233);";
+        backgroundStyle = "background-color: rgba(56, 189, 248, 135);";
+    }
     else if (isBlockedMove)
     {
-        borderStyle = "border: 5px solid rgb(220, 38, 38);";
-        backgroundStyle = "background-color: rgba(239, 68, 68, 120);";
+        borderStyle = "border: 4px dashed rgb(107, 114, 128);";
+        backgroundStyle = "background-color: rgba(75, 85, 99, 125);";
     }
 
     if (isSelected)
@@ -231,10 +245,20 @@ void BattleBoardService::drawBoard(QGridLayout* grid,
             const bool isBlockedMove =
                 hasSelection && gameState.isBlockedMovePosition(col, row);
 
+            const bool isAttackable =
+                hasSelection && gameState.isAttackablePosition(col, row);
+
+            const bool isHealable =
+                hasSelection && gameState.isHealablePosition(col, row);
+
             auto* overlay = new QFrame(tileButton);
             overlay->setGeometry(0, 0, tileSize, tileSize);
             overlay->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-            overlay->setStyleSheet(buildOverlayStyle(isSelected, isAvailableMove, isBlockedMove));
+            overlay->setStyleSheet(buildOverlayStyle(isSelected,
+                                                     isAvailableMove,
+                                                     isBlockedMove,
+                                                     isAttackable,
+                                                     isHealable));
             overlay->raise();
 
             QObject::connect(tileButton, &QPushButton::clicked, boardContainer, [onTileClicked, col, row]()

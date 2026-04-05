@@ -17,7 +17,7 @@ public:
 
 private:
     bool canSelectUnit(const GameState& gameState, const Unit* unit) const;
-    void calculateMoveHighlights(GameState& gameState, int x, int y) const;
+    void calculateActionHighlights(GameState& gameState, int x, int y) const;
     bool tryMoveSelectedUnit(GameState& gameState, int targetX, int targetY);
     bool tryAttackSelectedUnit(GameState& gameState, int targetX, int targetY);
     bool tryHealSelectedUnit(GameState& gameState, int targetX, int targetY);

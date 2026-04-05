@@ -1,5 +1,19 @@
 #include "gamestate.h"
 
+namespace
+{
+bool containsPosition(const QVector<QPair<int, int>>& positions, int x, int y)
+{
+    for (const auto& position : positions)
+    {
+        if (position.first == x && position.second == y)
+            return true;
+    }
+
+    return false;
+}
+}
+
 GameState::GameState()
     : m_board(10, 10),
     m_playerTeam("Niebiescy", TeamSide::Player),
@@ -47,8 +61,7 @@ void GameState::nextTurn()
     }
 
     clearSelectedPosition();
-    clearAvailableMovePositions();
-    clearBlockedMovePositions();
+    clearAllHighlights();
     resetTurnActionPoints();
     resetCurrentSideUnitsForTurn();
 
@@ -96,13 +109,7 @@ void GameState::clearAvailableMovePositions()
 
 bool GameState::isMovePositionAvailable(int x, int y) const
 {
-    for (const auto& position : m_availableMovePositions)
-    {
-        if (position.first == x && position.second == y)
-            return true;
-    }
-
-    return false;
+    return containsPosition(m_availableMovePositions, x, y);
 }
 
 void GameState::setBlockedMovePositions(const QVector<QPair<int, int>>& positions)
@@ -122,13 +129,55 @@ void GameState::clearBlockedMovePositions()
 
 bool GameState::isBlockedMovePosition(int x, int y) const
 {
-    for (const auto& position : m_blockedMovePositions)
-    {
-        if (position.first == x && position.second == y)
-            return true;
-    }
+    return containsPosition(m_blockedMovePositions, x, y);
+}
 
-    return false;
+void GameState::setAttackablePositions(const QVector<QPair<int, int>>& positions)
+{
+    m_attackablePositions = positions;
+}
+
+const QVector<QPair<int, int>>& GameState::getAttackablePositions() const
+{
+    return m_attackablePositions;
+}
+
+void GameState::clearAttackablePositions()
+{
+    m_attackablePositions.clear();
+}
+
+bool GameState::isAttackablePosition(int x, int y) const
+{
+    return containsPosition(m_attackablePositions, x, y);
+}
+
+void GameState::setHealablePositions(const QVector<QPair<int, int>>& positions)
+{
+    m_healablePositions = positions;
+}
+
+const QVector<QPair<int, int>>& GameState::getHealablePositions() const
+{
+    return m_healablePositions;
+}
+
+void GameState::clearHealablePositions()
+{
+    m_healablePositions.clear();
+}
+
+bool GameState::isHealablePosition(int x, int y) const
+{
+    return containsPosition(m_healablePositions, x, y);
+}
+
+void GameState::clearAllHighlights()
+{
+    clearAvailableMovePositions();
+    clearBlockedMovePositions();
+    clearAttackablePositions();
+    clearHealablePositions();
 }
 
 void GameState::setLastActionMessage(const QString& message)
