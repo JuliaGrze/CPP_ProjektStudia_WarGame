@@ -4,6 +4,7 @@
 #include "../../config/gameconfig.h"
 #include "../engine/battleengine.h"
 #include "../models/gamestate.h"
+#include "aicontroller.h"
 
 class GameController
 {
@@ -19,9 +20,13 @@ public:
     const GameConfig& getGameConfig() const;
 
 private:
+    void processAiTurnIfNeeded();
+
+private:
     GameConfig m_config;
     GameState m_state;
     BattleEngine m_engine;
+    AIController m_aiController;
 };
 
 #endif // GAMECONTROLLER_H

@@ -1,7 +1,7 @@
 #ifndef AICONTROLLER_H
 #define AICONTROLLER_H
 
-#include "interfaces//iplayercontroller.h"
+#include "interfaces/iplayercontroller.h"
 
 class AIController : public IPlayerController
 {

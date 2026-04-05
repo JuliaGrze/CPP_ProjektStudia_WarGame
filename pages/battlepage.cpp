@@ -83,13 +83,29 @@ void BattlePage::redrawBoard()
 void BattlePage::updateTurnInfo()
 {
     int currentTurn = 1;
+    TeamSide currentSide = TeamSide::Player;
 
     if (m_controller)
-        currentTurn = m_controller->getGameState().getCurrentTurn();
+    {
+        const GameState& gameState = m_controller->getGameState();
+        currentTurn = gameState.getCurrentTurn();
+        currentSide = gameState.getCurrentSide();
+    }
+
+    const bool isPlayerTurn = currentSide == TeamSide::Player;
+    const QString sideText = isPlayerTurn ? "NIEBIESCY" : "CZERWONI";
+    const QString sideColor = isPlayerTurn ? "#60a5fa" : "#f87171";
 
     ui->labelTurnNumber->setText(
-        QString("<div style='text-align:center; font-size:18px; font-weight:800; color:#f9fafb;'>Tura %1</div>")
+        QString(
+            "<div style='text-align:center;'>"
+            "<div style='font-size:18px; font-weight:800; color:#f9fafb;'>Tura %1</div>"
+            "<div style='font-size:14px; font-weight:700; color:%2; margin-top:4px;'>Ruch: %3</div>"
+            "</div>"
+            )
             .arg(currentTurn)
+            .arg(sideColor)
+            .arg(sideText)
         );
 }
 
@@ -180,19 +196,31 @@ void BattlePage::refreshStatistics()
                     "<div style='line-height:1.7;'>"
                     "<span style='color:#fca5a5; font-weight:700;'>HP:</span> %1 / %2<br/>"
                     "<span style='color:#fdba74; font-weight:700;'>Atak:</span> %3<br/>"
-                    "<span style='color:#86efac; font-weight:700;'>Zasięg ataku:</span> %4<br/>"
-                    "<span style='color:#93c5fd; font-weight:700;'>Ruch:</span> do %5 pól (1 pole = %6 AP)<br/>"
+                    "<span style='color:#86efac; font-weight:700;'>Zasięg:</span> %4 - %5<br/>"
+                    "<span style='color:#93c5fd; font-weight:700;'>Ruch:</span> do %6 pól<br/>"
                     "<span style='color:#fbbf24; font-weight:700;'>Koszt ataku:</span> %7 AP<br/>"
-                    "<span style='color:#c4b5fd; font-weight:700;'>AP drużyny:</span> %8 / %9"
+                    "<span style='color:#c4b5fd; font-weight:700;'>Pancerz:</span> %8<br/>"
+                    "<span style='color:#f9a8d4; font-weight:700;'>Celność:</span> %9<br/>"
+                    "<span style='color:#a7f3d0; font-weight:700;'>Unik:</span> %10<br/>"
+                    "<span style='color:#fcd34d; font-weight:700;'>Leczenie:</span> %11<br/>"
+                    "<span style='color:#d1d5db;'>Ruch w turze:</span> %12<br/>"
+                    "<span style='color:#d1d5db;'>Akcja w turze:</span> %13<br/>"
+                    "<span style='color:#cbd5e1;'>AP drużyny:</span> %14 / %15"
                     "</div>"
                     )
                     .arg(unit->getHealth())
                     .arg(unit->getMaxHealth())
                     .arg(unit->getDamage())
+                    .arg(unit->getMinRange())
                     .arg(unit->getRange())
                     .arg(unit->getMovementPoints())
-                    .arg(unit->getMoveCostPerTile())
                     .arg(unit->getAttackCost())
+                    .arg(unit->getArmor())
+                    .arg(unit->getAccuracy())
+                    .arg(unit->getEvasion())
+                    .arg(unit->canHeal() ? QString::number(unit->getHealAmount()) : "-")
+                    .arg(unit->hasMovedThisTurn() ? "tak" : "nie")
+                    .arg(unit->hasActedThisTurn() ? "tak" : "nie")
                     .arg(gameState.getCurrentTurnActionPoints())
                     .arg(gameState.getMaxTurnActionPoints())
                 );
@@ -212,8 +240,8 @@ void BattlePage::refreshStatistics()
         QString(
             "<div style='line-height:1.8; color:#9ca3af; text-align:center;'>"
             "AP drużyny: <b>%1 / %2</b><br/>"
-            "Ruch kosztuje tyle AP, ile pól przejdziesz.<br/>"
-            "Kliknij swoją jednostkę, a potem puste pole albo przeciwnika."
+            "Ruch kosztuje tyle AP, ile wynika z terenu i ścieżki.<br/>"
+            "Kliknij swoją jednostkę, a potem puste pole, sojusznika do leczenia albo przeciwnika."
             "</div>"
             )
             .arg(gameState.getCurrentTurnActionPoints())

@@ -23,6 +23,9 @@ public:
     void removeUnit();
 
     bool isWalkable() const;
+    int getMovementCost() const;
+    int getCoverBonus() const;
+    int getRangeBonus() const;
 
 private:
     int m_x = 0;

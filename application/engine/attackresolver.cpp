@@ -1,24 +1,9 @@
 #include "attackresolver.h"
-
-#include "defaultattackstrategy.h"
 #include "../models/unit.h"
 
-#include <memory>
+#include <QRandomGenerator>
+#include <algorithm>
 #include <cmath>
-
-namespace
-{
-std::unique_ptr<IAttackStrategy> createDefaultStrategy()
-{
-    return std::make_unique<DefaultAttackStrategy>();
-}
-}
-
-class AttackResolverPrivate
-{
-public:
-    std::unique_ptr<IAttackStrategy> strategy = createDefaultStrategy();
-};
 
 AttackResolver::AttackResolver() = default;
 
@@ -32,21 +17,80 @@ bool AttackResolver::canAttack(const Unit& attacker,
                                int attackerY,
                                const Unit& defender,
                                int defenderX,
-                               int defenderY) const
+                               int defenderY,
+                               TerrainType attackerTerrain) const
 {
     if (!attacker.isAlive() || !defender.isAlive())
+        return false;
+
+    if (!attacker.canAttackNow())
         return false;
 
     if (attacker.getSide() == defender.getSide())
         return false;
 
     const int distance = calculateDistance(attackerX, attackerY, defenderX, defenderY);
-    return distance <= attacker.getRange();
+    const int maxRange = attacker.getRange() + (attackerTerrain == TerrainType::Mountain ? 1 : 0);
+
+    return distance >= attacker.getMinRange() && distance <= maxRange;
+}
+
+int AttackResolver::calculateHitChance(const Unit& attacker,
+                                       const Unit& defender,
+                                       int distance,
+                                       TerrainType attackerTerrain,
+                                       TerrainType defenderTerrain) const
+{
+    int distancePenalty = 0;
+    if (distance > 1)
+        distancePenalty = (distance - 1) * 7;
+
+    int rangeBonus = 0;
+    if (attackerTerrain == TerrainType::Mountain)
+        rangeBonus = 5;
+
+    int coverBonus = 0;
+    switch (defenderTerrain)
+    {
+    case TerrainType::Forest: coverBonus = 15; break;
+    case TerrainType::Mountain: coverBonus = 10; break;
+    case TerrainType::Building: coverBonus = 20; break;
+    case TerrainType::Plain:
+    case TerrainType::Water:
+    default: break;
+    }
+
+    const int raw = attacker.getAccuracy() - defender.getEvasion() - distancePenalty - coverBonus + rangeBonus;
+    return std::clamp(raw, 25, 95);
+}
+
+int AttackResolver::calculateDamage(const Unit& attacker,
+                                    const Unit& defender,
+                                    TerrainType defenderTerrain) const
+{
+    const int randomPart = QRandomGenerator::global()->bounded(-5, 6);
+
+    int terrainReduction = 0;
+    switch (defenderTerrain)
+    {
+    case TerrainType::Forest: terrainReduction = 2; break;
+    case TerrainType::Mountain: terrainReduction = 3; break;
+    case TerrainType::Building: terrainReduction = 4; break;
+    case TerrainType::Plain:
+    case TerrainType::Water:
+    default: break;
+    }
+
+    const int armorAfterPiercing = std::max(0, defender.getArmor() - attacker.getArmorPiercing());
+    const int rawDamage = attacker.getDamage() + randomPart;
+
+    return std::max(1, rawDamage - armorAfterPiercing - terrainReduction);
 }
 
 AttackResult AttackResolver::resolveAttack(Unit& attacker,
                                            int attackerX,
                                            int attackerY,
+                                           TerrainType attackerTerrain,
                                            Unit& defender,
                                            int defenderX,
                                            int defenderY,
@@ -54,34 +98,48 @@ AttackResult AttackResolver::resolveAttack(Unit& attacker,
 {
     AttackResult result;
 
-    if (!canAttack(attacker, attackerX, attackerY, defender, defenderX, defenderY))
+    if (!canAttack(attacker, attackerX, attackerY, defender, defenderX, defenderY, attackerTerrain))
     {
-        result.message = QString("%1 nie może zaatakować celu - przeciwnik jest poza zasięgiem.")
-                             .arg(attacker.getName());
+        result.message = QString("%1 nie może wykonać ataku.").arg(attacker.getName());
         return result;
     }
 
-    DefaultAttackStrategy strategy;
-    const int damage = strategy.calculateDamage(attacker, defender, defenderTerrain);
-
-    defender.takeDamage(damage);
-
+    const int distance = calculateDistance(attackerX, attackerY, defenderX, defenderY);
+    result.hitChance = calculateHitChance(attacker, defender, distance, attackerTerrain, defenderTerrain);
+    result.roll = QRandomGenerator::global()->bounded(1, 101);
     result.attackPerformed = true;
-    result.damageDealt = damage;
+
+    if (result.roll > result.hitChance)
+    {
+        result.hit = false;
+        result.message = QString("%1 zaatakował %2, ale spudłował (%3/%4).")
+                             .arg(attacker.getName())
+                             .arg(defender.getName())
+                             .arg(result.roll)
+                             .arg(result.hitChance);
+        return result;
+    }
+
+    result.hit = true;
+    result.damageDealt = calculateDamage(attacker, defender, defenderTerrain);
+    defender.takeDamage(result.damageDealt);
     result.targetDestroyed = !defender.isAlive();
 
     if (result.targetDestroyed)
     {
-        result.message = QString("%1 zaatakował %2 i zniszczył jednostkę.")
+        result.message = QString("%1 trafił %2 za %3 obrażeń i zniszczył jednostkę.")
                              .arg(attacker.getName())
-                             .arg(defender.getName());
+                             .arg(defender.getName())
+                             .arg(result.damageDealt);
     }
     else
     {
-        result.message = QString("%1 zaatakował %2 i zadał %3 obrażeń.")
+        result.message = QString("%1 trafił %2 za %3 obrażeń (%4/%5).")
                              .arg(attacker.getName())
                              .arg(defender.getName())
-                             .arg(damage);
+                             .arg(result.damageDealt)
+                             .arg(result.roll)
+                             .arg(result.hitChance);
     }
 
     return result;

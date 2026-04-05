@@ -7,60 +7,21 @@ GameState::GameState()
 {
 }
 
-Board& GameState::getBoard()
-{
-    return m_board;
-}
+Board& GameState::getBoard() { return m_board; }
+const Board& GameState::getBoard() const { return m_board; }
+void GameState::setBoard(const Board& board) { m_board = board; }
 
-const Board& GameState::getBoard() const
-{
-    return m_board;
-}
+Team& GameState::getPlayerTeam() { return m_playerTeam; }
+const Team& GameState::getPlayerTeam() const { return m_playerTeam; }
 
-void GameState::setBoard(const Board& board)
-{
-    m_board = board;
-}
+Team& GameState::getEnemyTeam() { return m_enemyTeam; }
+const Team& GameState::getEnemyTeam() const { return m_enemyTeam; }
 
-Team& GameState::getPlayerTeam()
-{
-    return m_playerTeam;
-}
+int GameState::getCurrentTurn() const { return m_currentTurn; }
+void GameState::setCurrentTurn(int turn) { m_currentTurn = turn; }
 
-const Team& GameState::getPlayerTeam() const
-{
-    return m_playerTeam;
-}
-
-Team& GameState::getEnemyTeam()
-{
-    return m_enemyTeam;
-}
-
-const Team& GameState::getEnemyTeam() const
-{
-    return m_enemyTeam;
-}
-
-int GameState::getCurrentTurn() const
-{
-    return m_currentTurn;
-}
-
-void GameState::setCurrentTurn(int turn)
-{
-    m_currentTurn = turn;
-}
-
-TeamSide GameState::getCurrentSide() const
-{
-    return m_currentSide;
-}
-
-void GameState::setCurrentSide(TeamSide side)
-{
-    m_currentSide = side;
-}
+TeamSide GameState::getCurrentSide() const { return m_currentSide; }
+void GameState::setCurrentSide(TeamSide side) { m_currentSide = side; }
 
 Team& GameState::getCurrentTeam()
 {
@@ -74,6 +35,9 @@ const Team& GameState::getCurrentTeam() const
 
 void GameState::nextTurn()
 {
+    if (m_gameFinished)
+        return;
+
     if (m_currentSide == TeamSide::Player)
         m_currentSide = TeamSide::Enemy;
     else
@@ -85,13 +49,14 @@ void GameState::nextTurn()
     clearSelectedPosition();
     clearAvailableMovePositions();
     clearBlockedMovePositions();
-
     resetTurnActionPoints();
     resetCurrentSideUnitsForTurn();
 
     m_lastActionMessage = QString("Rozpoczęła się tura %1. AP drużyny: %2.")
                               .arg(m_currentSide == TeamSide::Player ? "Niebieskich" : "Czerwonych")
                               .arg(m_currentTurnActionPoints);
+
+    addLogEntry(m_lastActionMessage);
 }
 
 void GameState::setSelectedPosition(int x, int y)
@@ -111,15 +76,8 @@ bool GameState::hasSelectedPosition() const
     return m_selectedX >= 0 && m_selectedY >= 0;
 }
 
-int GameState::getSelectedX() const
-{
-    return m_selectedX;
-}
-
-int GameState::getSelectedY() const
-{
-    return m_selectedY;
-}
+int GameState::getSelectedX() const { return m_selectedX; }
+int GameState::getSelectedY() const { return m_selectedY; }
 
 void GameState::setAvailableMovePositions(const QVector<QPair<int, int>>& positions)
 {
@@ -176,11 +134,23 @@ bool GameState::isBlockedMovePosition(int x, int y) const
 void GameState::setLastActionMessage(const QString& message)
 {
     m_lastActionMessage = message;
+    addLogEntry(message);
 }
 
 QString GameState::getLastActionMessage() const
 {
     return m_lastActionMessage;
+}
+
+void GameState::addLogEntry(const QString& message)
+{
+    if (!message.trimmed().isEmpty())
+        m_battleLog.append(message);
+}
+
+const QStringList& GameState::getBattleLog() const
+{
+    return m_battleLog;
 }
 
 int GameState::getCurrentTurnActionPoints() const
@@ -211,6 +181,36 @@ void GameState::consumeTurnActionPoints(int amount)
 void GameState::resetTurnActionPoints()
 {
     m_currentTurnActionPoints = m_maxTurnActionPoints;
+}
+
+bool GameState::isGameFinished() const
+{
+    return m_gameFinished;
+}
+
+TeamSide GameState::getWinnerSide() const
+{
+    return m_winnerSide;
+}
+
+bool GameState::updateVictoryState()
+{
+    if (m_gameFinished)
+        return true;
+
+    const bool playerAlive = m_playerTeam.hasUnitsAlive();
+    const bool enemyAlive = m_enemyTeam.hasUnitsAlive();
+
+    if (playerAlive && enemyAlive)
+        return false;
+
+    m_gameFinished = true;
+    m_winnerSide = playerAlive ? TeamSide::Player : TeamSide::Enemy;
+    m_lastActionMessage = QString("Koniec gry. Wygrywają %1.")
+                              .arg(m_winnerSide == TeamSide::Player ? "Niebiescy" : "Czerwoni");
+    addLogEntry(m_lastActionMessage);
+
+    return true;
 }
 
 void GameState::resetCurrentSideUnitsForTurn()
