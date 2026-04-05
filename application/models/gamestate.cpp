@@ -12,6 +12,11 @@ bool containsPosition(const QVector<QPair<int, int>>& positions, int x, int y)
 
     return false;
 }
+
+QString sideDisplayName(TeamSide side)
+{
+    return side == TeamSide::Player ? "Niebiescy" : "Czerwoni";
+}
 }
 
 GameState::GameState()
@@ -194,7 +199,11 @@ QString GameState::getLastActionMessage() const
 void GameState::addLogEntry(const QString& message)
 {
     if (!message.trimmed().isEmpty())
-        m_battleLog.append(message);
+    {
+        m_battleLog.append(QString("[Tura %1] %2")
+                               .arg(m_currentTurn)
+                               .arg(message));
+    }
 }
 
 const QStringList& GameState::getBattleLog() const
@@ -258,6 +267,7 @@ bool GameState::updateVictoryState()
     m_lastActionMessage = QString("Koniec gry. Wygrywają %1.")
                               .arg(m_winnerSide == TeamSide::Player ? "Niebiescy" : "Czerwoni");
     addLogEntry(m_lastActionMessage);
+    addLogEntry(getPostGameSummaryText());
 
     return true;
 }
@@ -271,4 +281,118 @@ void GameState::resetCurrentSideUnitsForTurn()
         if (unit && unit->isAlive())
             unit->resetTurnResources();
     }
+}
+
+TeamBattleStats& GameState::getStatsForSideInternal(TeamSide side)
+{
+    return side == TeamSide::Player ? m_playerStats : m_enemyStats;
+}
+
+const TeamBattleStats& GameState::getStatsForSideInternal(TeamSide side) const
+{
+    return side == TeamSide::Player ? m_playerStats : m_enemyStats;
+}
+
+void GameState::recordShotFired(TeamSide side)
+{
+    getStatsForSideInternal(side).shotsFired++;
+}
+
+void GameState::recordSuccessfulHit(TeamSide side, int damage)
+{
+    TeamBattleStats& stats = getStatsForSideInternal(side);
+    stats.hits++;
+    stats.damageDealt += damage;
+}
+
+void GameState::recordUnitDestroyed(TeamSide side)
+{
+    getStatsForSideInternal(side).unitsDestroyed++;
+}
+
+TeamBattleStats GameState::getStatsForSide(TeamSide side) const
+{
+    return getStatsForSideInternal(side);
+}
+
+int GameState::getAccuracyPercent(TeamSide side) const
+{
+    const TeamBattleStats& stats = getStatsForSideInternal(side);
+
+    if (stats.shotsFired <= 0)
+        return 0;
+
+    return (stats.hits * 100) / stats.shotsFired;
+}
+
+int GameState::getLossesForSide(TeamSide side) const
+{
+    const Team& team = side == TeamSide::Player ? m_playerTeam : m_enemyTeam;
+    return team.getUnitsCount() - team.getAliveUnitsCount();
+}
+
+QString GameState::getPostGameSummaryText() const
+{
+    const TeamBattleStats playerStats = getStatsForSide(TeamSide::Player);
+    const TeamBattleStats enemyStats = getStatsForSide(TeamSide::Enemy);
+
+    return QString(
+               "PODSUMOWANIE BITWY\n"
+               "Liczba tur: %1\n"
+               "Niebiescy -> straty: %2, obrażenia: %3, trafienia: %4/%5, skuteczność: %6%%, zniszczone jednostki: %7\n"
+               "Czerwoni -> straty: %8, obrażenia: %9, trafienia: %10/%11, skuteczność: %12%%, zniszczone jednostki: %13")
+        .arg(m_currentTurn)
+        .arg(getLossesForSide(TeamSide::Player))
+        .arg(playerStats.damageDealt)
+        .arg(playerStats.hits)
+        .arg(playerStats.shotsFired)
+        .arg(getAccuracyPercent(TeamSide::Player))
+        .arg(playerStats.unitsDestroyed)
+        .arg(getLossesForSide(TeamSide::Enemy))
+        .arg(enemyStats.damageDealt)
+        .arg(enemyStats.hits)
+        .arg(enemyStats.shotsFired)
+        .arg(getAccuracyPercent(TeamSide::Enemy))
+        .arg(enemyStats.unitsDestroyed);
+}
+
+QString GameState::getPostGameSummaryHtml() const
+{
+    const TeamBattleStats playerStats = getStatsForSide(TeamSide::Player);
+    const TeamBattleStats enemyStats = getStatsForSide(TeamSide::Enemy);
+
+    return QString(
+               "<div style='text-align:center;'>"
+               "<div style='font-size:18px; font-weight:800; color:#f9fafb;'>PODSUMOWANIE BITWY</div>"
+               "<div style='margin-top:8px; color:#fbbf24; font-weight:700;'>Liczba tur: %1</div>"
+               "<div style='margin-top:14px; color:#60a5fa; font-weight:800;'>NIEBIESCY</div>"
+               "<div style='line-height:1.7; color:#dbeafe;'>"
+               "Straty: %2<br/>"
+               "Zadane obrażenia: %3<br/>"
+               "Trafienia: %4 / %5<br/>"
+               "Skuteczność: %6%%<br/>"
+               "Zniszczone jednostki: %7"
+               "</div>"
+               "<div style='margin-top:14px; color:#f87171; font-weight:800;'>CZERWONI</div>"
+               "<div style='line-height:1.7; color:#fee2e2;'>"
+               "Straty: %8<br/>"
+               "Zadane obrażenia: %9<br/>"
+               "Trafienia: %10 / %11<br/>"
+               "Skuteczność: %12%%<br/>"
+               "Zniszczone jednostki: %13"
+               "</div>"
+               "</div>")
+        .arg(m_currentTurn)
+        .arg(getLossesForSide(TeamSide::Player))
+        .arg(playerStats.damageDealt)
+        .arg(playerStats.hits)
+        .arg(playerStats.shotsFired)
+        .arg(getAccuracyPercent(TeamSide::Player))
+        .arg(playerStats.unitsDestroyed)
+        .arg(getLossesForSide(TeamSide::Enemy))
+        .arg(enemyStats.damageDealt)
+        .arg(enemyStats.hits)
+        .arg(enemyStats.shotsFired)
+        .arg(getAccuracyPercent(TeamSide::Enemy))
+        .arg(enemyStats.unitsDestroyed);
 }

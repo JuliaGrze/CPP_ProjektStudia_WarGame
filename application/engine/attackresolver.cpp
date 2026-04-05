@@ -12,6 +12,40 @@ int AttackResolver::calculateDistance(int x1, int y1, int x2, int y2) const
     return std::abs(x1 - x2) + std::abs(y1 - y2);
 }
 
+int AttackResolver::calculateTerrainDefenseBonus(TerrainType terrain) const
+{
+    switch (terrain)
+    {
+    case TerrainType::Forest:
+        return 10;
+    case TerrainType::Mountain:
+        return 8;
+    case TerrainType::Building:
+        return 12;
+    case TerrainType::Plain:
+    case TerrainType::Water:
+    default:
+        return 0;
+    }
+}
+
+int AttackResolver::calculateTerrainDamageReduction(TerrainType terrain) const
+{
+    switch (terrain)
+    {
+    case TerrainType::Forest:
+        return 2;
+    case TerrainType::Mountain:
+        return 3;
+    case TerrainType::Building:
+        return 4;
+    case TerrainType::Plain:
+    case TerrainType::Water:
+    default:
+        return 0;
+    }
+}
+
 bool AttackResolver::canAttack(const Unit& attacker,
                                int attackerX,
                                int attackerY,
@@ -30,7 +64,10 @@ bool AttackResolver::canAttack(const Unit& attacker,
         return false;
 
     const int distance = calculateDistance(attackerX, attackerY, defenderX, defenderY);
-    const int maxRange = attacker.getRange() + (attackerTerrain == TerrainType::Mountain ? 1 : 0);
+
+    int maxRange = attacker.getRange();
+    if (attackerTerrain == TerrainType::Mountain)
+        maxRange += 1;
 
     return distance >= attacker.getMinRange() && distance <= maxRange;
 }
@@ -41,50 +78,30 @@ int AttackResolver::calculateHitChance(const Unit& attacker,
                                        TerrainType attackerTerrain,
                                        TerrainType defenderTerrain) const
 {
-    int distancePenalty = 0;
-    if (distance > 1)
-        distancePenalty = (distance - 1) * 7;
+    const int baseChance = 50;
+    const int attackerAccuracy = attacker.getAccuracy();
+    const int defenderDefense = defender.getEvasion();
+    const int terrainDefense = calculateTerrainDefenseBonus(defenderTerrain);
 
-    int rangeBonus = 0;
+    int distancePenalty = distance * 5;
+    if (distance <= 1)
+        distancePenalty = 0;
+
+    int attackerTerrainBonus = 0;
     if (attackerTerrain == TerrainType::Mountain)
-        rangeBonus = 5;
+        attackerTerrainBonus = 5;
 
-    int coverBonus = 0;
-    switch (defenderTerrain)
-    {
-    case TerrainType::Forest: coverBonus = 15; break;
-    case TerrainType::Mountain: coverBonus = 10; break;
-    case TerrainType::Building: coverBonus = 20; break;
-    case TerrainType::Plain:
-    case TerrainType::Water:
-    default: break;
-    }
+    // Zgodnie z założeniem:
+    // hitChance = base + accuracy - defense - distance
+    const int rawHitChance =
+        baseChance
+        + attackerAccuracy
+        - defenderDefense
+        - terrainDefense
+        - distancePenalty
+        + attackerTerrainBonus;
 
-    const int raw = attacker.getAccuracy() - defender.getEvasion() - distancePenalty - coverBonus + rangeBonus;
-    return std::clamp(raw, 25, 95);
-}
-
-int AttackResolver::calculateDamage(const Unit& attacker,
-                                    const Unit& defender,
-                                    TerrainType defenderTerrain) const
-{
-    const int randomPart = QRandomGenerator::global()->bounded(-5, 6);
-
-    int terrainReduction = 0;
-    switch (defenderTerrain)
-    {
-    case TerrainType::Forest: terrainReduction = 2; break;
-    case TerrainType::Mountain: terrainReduction = 3; break;
-    case TerrainType::Building: terrainReduction = 4; break;
-    case TerrainType::Plain:
-    case TerrainType::Water:
-    default: break;
-    }
-
-    const int armorAfterPiercing = std::max(0, defender.getArmor() - attacker.getArmorPiercing());
-    const int rawDamage = attacker.getDamage() + randomPart;
-
-    return std::max(1, rawDamage - armorAfterPiercing - terrainReduction);
+    return std::clamp(rawHitChance, 15, 95);
 }
 
 AttackResult AttackResolver::resolveAttack(Unit& attacker,
@@ -100,53 +117,96 @@ AttackResult AttackResolver::resolveAttack(Unit& attacker,
 
     if (!canAttack(attacker, attackerX, attackerY, defender, defenderX, defenderY, attackerTerrain))
     {
-        result.message = QString("%1 nie może wykonać ataku.").arg(attacker.getName());
+        result.message = QString("%1 nie może teraz zaatakować tego celu.")
+                             .arg(attacker.getName());
         return result;
     }
 
-    const int distance = calculateDistance(attackerX, attackerY, defenderX, defenderY);
-    result.hitChance = calculateHitChance(attacker, defender, distance, attackerTerrain, defenderTerrain);
-    result.roll = QRandomGenerator::global()->bounded(1, 101);
     result.attackPerformed = true;
+    result.distance = calculateDistance(attackerX, attackerY, defenderX, defenderY);
+    result.hitChance = calculateHitChance(attacker, defender, result.distance, attackerTerrain, defenderTerrain);
+    result.roll = QRandomGenerator::global()->bounded(1, 101);
     result.targetMaxHealth = defender.getMaxHealth();
 
+    attacker.markActed();
+
+    // Trafienie, gdy rzut <= szansa
     if (result.roll > result.hitChance)
     {
         result.hit = false;
         result.targetHealthAfter = defender.getHealth();
-        result.message = QString("%1 zaatakował %2, ale spudłował. Rzut: %3, potrzebne: %4 lub mniej.")
+
+        result.message = QString(
+                             "%1 zaatakował %2, ale spudłował. "
+                             "Szansa trafienia: %3%%, rzut: %4. "
+                             "Dystans: %5.")
                              .arg(attacker.getName())
                              .arg(defender.getName())
+                             .arg(result.hitChance)
                              .arg(result.roll)
-                             .arg(result.hitChance);
+                             .arg(result.distance);
+
         return result;
     }
 
     result.hit = true;
-    result.damageDealt = calculateDamage(attacker, defender, defenderTerrain);
+
+    result.baseDamage = attacker.getDamage();
+    result.randomDamageBonus = QRandomGenerator::global()->bounded(-5, 6);
+
+    const int armorAfterPiercing =
+        std::max(0, defender.getArmor() - attacker.getArmorPiercing());
+
+    result.defenderArmorUsed = armorAfterPiercing;
+    result.terrainReduction = calculateTerrainDamageReduction(defenderTerrain);
+
+    const int rawDamage =
+        result.baseDamage
+        + result.randomDamageBonus
+        - result.defenderArmorUsed
+        - result.terrainReduction;
+
+    result.damageDealt = std::max(1, rawDamage);
+
     defender.takeDamage(result.damageDealt);
+
     result.targetDestroyed = !defender.isAlive();
     result.targetHealthAfter = defender.getHealth();
 
     if (result.targetDestroyed)
     {
-        result.message = QString("%1 trafił %2 za %3 obrażeń i zniszczył jednostkę. Rzut: %4/%5.")
+        result.message = QString(
+                             "%1 trafił %2 i zniszczył jednostkę. "
+                             "Obrażenia: %3 (bazowe %4, losowość %+5, pancerz -%6, teren -%7). "
+                             "Szansa trafienia: %8%%, rzut: %9.")
                              .arg(attacker.getName())
                              .arg(defender.getName())
                              .arg(result.damageDealt)
-                             .arg(result.roll)
-                             .arg(result.hitChance);
+                             .arg(result.baseDamage)
+                             .arg(result.randomDamageBonus)
+                             .arg(result.defenderArmorUsed)
+                             .arg(result.terrainReduction)
+                             .arg(result.hitChance)
+                             .arg(result.roll);
     }
     else
     {
-        result.message = QString("%1 trafił %2 za %3 obrażeń. Pozostało %4/%5 HP. Rzut: %6/%7.")
+        result.message = QString(
+                             "%1 trafił %2 za %3 obrażeń. "
+                             "HP celu: %4/%5. "
+                             "Rozpiska: bazowe %6, losowość %+7, pancerz -%8, teren -%9. "
+                             "Szansa trafienia: %10%%, rzut: %11.")
                              .arg(attacker.getName())
                              .arg(defender.getName())
                              .arg(result.damageDealt)
                              .arg(result.targetHealthAfter)
                              .arg(result.targetMaxHealth)
-                             .arg(result.roll)
-                             .arg(result.hitChance);
+                             .arg(result.baseDamage)
+                             .arg(result.randomDamageBonus)
+                             .arg(result.defenderArmorUsed)
+                             .arg(result.terrainReduction)
+                             .arg(result.hitChance)
+                             .arg(result.roll);
     }
 
     return result;

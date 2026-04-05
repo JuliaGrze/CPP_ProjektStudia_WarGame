@@ -7,7 +7,8 @@ enum class TerrainType
     Forest,
     Mountain,
     Water,
-    Building
+    Building,
+    Bridge
 };
 
 #endif // TERRAINTYPE_H

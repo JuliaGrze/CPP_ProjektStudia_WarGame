@@ -10,6 +10,14 @@
 #include <QString>
 #include <QStringList>
 
+struct TeamBattleStats
+{
+    int shotsFired = 0;
+    int hits = 0;
+    int damageDealt = 0;
+    int unitsDestroyed = 0;
+};
+
 class GameState
 {
 public:
@@ -79,9 +87,21 @@ public:
 
     void resetCurrentSideUnitsForTurn();
 
+    void recordShotFired(TeamSide side);
+    void recordSuccessfulHit(TeamSide side, int damage);
+    void recordUnitDestroyed(TeamSide side);
+
+    TeamBattleStats getStatsForSide(TeamSide side) const;
+    int getAccuracyPercent(TeamSide side) const;
+    int getLossesForSide(TeamSide side) const;
+    QString getPostGameSummaryText() const;
+    QString getPostGameSummaryHtml() const;
+
 private:
     Team& getCurrentTeam();
     const Team& getCurrentTeam() const;
+    TeamBattleStats& getStatsForSideInternal(TeamSide side);
+    const TeamBattleStats& getStatsForSideInternal(TeamSide side) const;
 
 private:
     Board m_board;
@@ -106,6 +126,9 @@ private:
 
     bool m_gameFinished = false;
     TeamSide m_winnerSide = TeamSide::Player;
+
+    TeamBattleStats m_playerStats;
+    TeamBattleStats m_enemyStats;
 };
 
 #endif // GAMESTATE_H

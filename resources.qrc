@@ -15,5 +15,6 @@
         <file>images/units/artillery_blue.png</file>
         <file>images/units/artillery_red.png</file>
         <file>images/terrain/building.png</file>
+        <file>images/terrain/bridge.png</file>
     </qresource>
 </RCC>

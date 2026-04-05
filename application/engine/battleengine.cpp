@@ -34,6 +34,9 @@ bool BattleEngine::canSelectUnit(const GameState& gameState, const Unit* unit) c
     if (unit->getSide() != gameState.getCurrentSide())
         return false;
 
+    if (gameState.getCurrentTurnActionPoints() <= 0)
+        return false;
+
     return true;
 }
 
@@ -269,7 +272,10 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
 
     Unit* unit = sourceTile->getUnit();
     if (!unit || !unit->canMoveNow())
-        return false;
+    {
+        gameState.setLastActionMessage("Ta jednostka wykonała już ruch w tej turze.");
+        return true;
+    }
 
     const int movementDistance = calculateDistance(sourceTile->getX(), sourceTile->getY(), targetX, targetY);
     if (movementDistance <= 0 || movementDistance > unit->getMovementPoints())
@@ -406,7 +412,10 @@ bool BattleEngine::tryAttackSelectedUnit(GameState& gameState, int targetX, int 
         return false;
 
     if (!attacker->canAttackNow())
-        return false;
+    {
+        gameState.setLastActionMessage("Ta jednostka wykonała już atak w tej turze.");
+        return true;
+    }
 
     if (attacker->getSide() == defender->getSide())
         return false;
@@ -449,7 +458,14 @@ bool BattleEngine::tryAttackSelectedUnit(GameState& gameState, int targetX, int 
         return true;
     }
 
-    attacker->markActed();
+    gameState.recordShotFired(attacker->getSide());
+
+    if (result.hit)
+        gameState.recordSuccessfulHit(attacker->getSide(), result.damageDealt);
+
+    if (result.targetDestroyed)
+        gameState.recordUnitDestroyed(attacker->getSide());
+
     gameState.consumeTurnActionPoints(attackCost);
     clearDefeatedUnitFromTile(*defenderTile);
     gameState.setSelectedPosition(attackerTile->getX(), attackerTile->getY());
@@ -564,6 +580,145 @@ bool BattleEngine::unitHasAnyAvailableAction(const GameState& gameState, int x, 
     return false;
 }
 
+QString BattleEngine::getUnitUnavailableReason(const GameState& gameState, int x, int y, const Unit& unit) const
+{
+    if (!unit.isAlive())
+        return "Ta jednostka jest zniszczona.";
+
+    if (unit.getSide() != gameState.getCurrentSide())
+        return "To nie jest jednostka aktywnej drużyny.";
+
+    const int currentAp = gameState.getCurrentTurnActionPoints();
+    if (currentAp <= 0)
+        return "Drużyna nie ma już punktów akcji.";
+
+    const bool canStillMove = unit.canMoveNow();
+    const bool canStillAttack = unit.canAttackNow();
+    const bool canStillHeal = unit.canHealNow();
+
+    const bool enoughApForAttack = unit.getAttackCost() <= currentAp;
+
+    bool hasMoveTarget = false;
+    bool hasAttackTarget = false;
+    bool hasHealTarget = false;
+
+    const Tile* unitTile = gameState.getBoard().getTile(x, y);
+    if (!unitTile)
+        return "Nie udało się odczytać pozycji jednostki.";
+
+    const Board& board = gameState.getBoard();
+
+    if (canStillAttack && enoughApForAttack)
+    {
+        for (int targetY = 0; targetY < board.getHeight(); ++targetY)
+        {
+            for (int targetX = 0; targetX < board.getWidth(); ++targetX)
+            {
+                const Tile* targetTile = board.getTile(targetX, targetY);
+                if (!targetTile || !targetTile->isOccupied() || !targetTile->getUnit())
+                    continue;
+
+                const Unit* targetUnit = targetTile->getUnit();
+                if (!targetUnit || !targetUnit->isAlive() || targetUnit->getSide() == unit.getSide())
+                    continue;
+
+                if (m_attackResolver.canAttack(unit, x, y, *targetUnit, targetX, targetY, unitTile->getTerrain()))
+                {
+                    hasAttackTarget = true;
+                    break;
+                }
+            }
+            if (hasAttackTarget)
+                break;
+        }
+    }
+
+    if (canStillHeal && enoughApForAttack)
+    {
+        for (int targetY = 0; targetY < board.getHeight(); ++targetY)
+        {
+            for (int targetX = 0; targetX < board.getWidth(); ++targetX)
+            {
+                const Tile* targetTile = board.getTile(targetX, targetY);
+                if (!targetTile || !targetTile->isOccupied() || !targetTile->getUnit())
+                    continue;
+
+                const Unit* targetUnit = targetTile->getUnit();
+                if (!targetUnit || !targetUnit->isAlive() || targetUnit->getSide() != unit.getSide())
+                    continue;
+
+                if (!targetUnit->isDamaged())
+                    continue;
+
+                const int distance = calculateDistance(x, y, targetX, targetY);
+                if (distance >= unit.getMinRange() && distance <= unit.getRange())
+                {
+                    hasHealTarget = true;
+                    break;
+                }
+            }
+            if (hasHealTarget)
+                break;
+        }
+    }
+
+    if (canStillMove)
+    {
+        for (int targetY = 0; targetY < board.getHeight(); ++targetY)
+        {
+            for (int targetX = 0; targetX < board.getWidth(); ++targetX)
+            {
+                const Tile* targetTile = board.getTile(targetX, targetY);
+                if (!targetTile || targetTile->isOccupied() || !targetTile->isWalkable())
+                    continue;
+
+                const int distance = calculateDistance(x, y, targetX, targetY);
+                if (distance <= 0 || distance > unit.getMovementPoints())
+                    continue;
+
+                const int moveCost = calculateLowestMoveCost(gameState, unit, x, y, targetX, targetY);
+                if (moveCost != std::numeric_limits<int>::max() && moveCost <= currentAp)
+                {
+                    hasMoveTarget = true;
+                    break;
+                }
+            }
+            if (hasMoveTarget)
+                break;
+        }
+    }
+
+    if (!canStillMove && !canStillAttack && !canStillHeal)
+        return "Ta jednostka wykonała już wszystkie swoje akcje w tej turze.";
+
+    if (canStillMove && !hasMoveTarget && canStillAttack && !hasAttackTarget && (!canStillHeal || !hasHealTarget))
+        return "Brak dostępnych pól ruchu i brak celów w zasięgu.";
+
+    if (canStillMove && !hasMoveTarget && !canStillAttack && !canStillHeal)
+        return "Ta jednostka nie może już atakować, a nie ma też dostępnych pól ruchu.";
+
+    if (!canStillMove && canStillAttack && !hasAttackTarget && (!canStillHeal || !hasHealTarget))
+        return "Ta jednostka wykonała już ruch, a w zasięgu nie ma żadnego celu.";
+
+    if (canStillMove && !hasMoveTarget && canStillAttack && hasAttackTarget)
+        return "Ta jednostka nie ma już dostępnego ruchu, ale może jeszcze zaatakować.";
+
+    if (canStillMove && hasMoveTarget && canStillAttack && !hasAttackTarget && (!canStillHeal || !hasHealTarget))
+        return "Ta jednostka nie ma celu w zasięgu, ale może się jeszcze poruszyć.";
+
+    if (canStillAttack && !enoughApForAttack && !hasMoveTarget)
+        return "Drużyna ma za mało punktów akcji na atak, a ta jednostka nie ma też dostępnego ruchu.";
+
+    if (canStillAttack && !enoughApForAttack)
+        return QString("Drużyna ma za mało punktów akcji na atak tej jednostki. Wymagane: %1 AP.")
+            .arg(unit.getAttackCost());
+
+    if (canStillHeal && !hasHealTarget && !hasMoveTarget && !hasAttackTarget)
+        return "Brak sojusznika do leczenia, brak celu do ataku i brak dostępnego ruchu.";
+
+    return "Ta jednostka nie ma obecnie żadnej sensownej akcji do wykonania.";
+}
+
 bool BattleEngine::hasAnyAvailableAction(const GameState& gameState) const
 {
     const Board& board = gameState.getBoard();
@@ -638,6 +793,15 @@ void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
         if (!canSelectUnit(gameState, unit))
             return;
 
+        if (!unitHasAnyAvailableAction(gameState, x, y, *unit))
+        {
+            gameState.setLastActionMessage(
+                QString("%1: %2")
+                    .arg(unit->getName())
+                    .arg(getUnitUnavailableReason(gameState, x, y, *unit)));
+            return;
+        }
+
         gameState.setSelectedPosition(x, y);
         calculateActionHighlights(gameState, x, y);
 
@@ -691,6 +855,15 @@ void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
 
         if (canSelectUnit(gameState, clickedUnit))
         {
+            if (!unitHasAnyAvailableAction(gameState, x, y, *clickedUnit))
+            {
+                gameState.setLastActionMessage(
+                    QString("%1: %2")
+                        .arg(clickedUnit->getName())
+                        .arg(getUnitUnavailableReason(gameState, x, y, *clickedUnit)));
+                return;
+            }
+
             gameState.setSelectedPosition(x, y);
             calculateActionHighlights(gameState, x, y);
 

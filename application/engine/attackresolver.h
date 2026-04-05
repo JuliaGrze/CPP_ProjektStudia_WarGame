@@ -11,11 +11,20 @@ struct AttackResult
     bool attackPerformed = false;
     bool targetDestroyed = false;
     bool hit = false;
+
+    int distance = 0;
     int hitChance = 0;
     int roll = 0;
+
+    int baseDamage = 0;
+    int randomDamageBonus = 0;
+    int defenderArmorUsed = 0;
+    int terrainReduction = 0;
     int damageDealt = 0;
+
     int targetHealthAfter = 0;
     int targetMaxHealth = 0;
+
     QString message;
 };
 
@@ -43,14 +52,15 @@ public:
 
 private:
     int calculateDistance(int x1, int y1, int x2, int y2) const;
+
     int calculateHitChance(const Unit& attacker,
                            const Unit& defender,
                            int distance,
                            TerrainType attackerTerrain,
                            TerrainType defenderTerrain) const;
-    int calculateDamage(const Unit& attacker,
-                        const Unit& defender,
-                        TerrainType defenderTerrain) const;
+
+    int calculateTerrainDefenseBonus(TerrainType terrain) const;
+    int calculateTerrainDamageReduction(TerrainType terrain) const;
 };
 
 #endif // ATTACKRESOLVER_H

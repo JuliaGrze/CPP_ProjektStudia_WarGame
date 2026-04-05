@@ -26,6 +26,7 @@ private:
 
     bool hasAnyAvailableAction(const GameState& gameState) const;
     bool unitHasAnyAvailableAction(const GameState& gameState, int x, int y, const Unit& unit) const;
+    QString getUnitUnavailableReason(const GameState& gameState, int x, int y, const Unit& unit) const;
 
     int calculateDistance(int x1, int y1, int x2, int y2) const;
     int calculateLowestMoveCost(const GameState& gameState,

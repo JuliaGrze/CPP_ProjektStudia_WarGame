@@ -3,6 +3,10 @@
 
 #include <QPushButton>
 #include <QTimer>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QPlainTextEdit>
+#include <QLabel>
 
 #include "../application/controllers/gamecontroller.h"
 #include "../application/models/gamestate.h"
@@ -63,18 +67,6 @@ BattlePage::BattlePage(QWidget *parent)
 {
     ui->setupUi(this);
 
-    ui->labelLegend->setText(
-        "<div style='line-height:1.6;'>"
-        "<span style='color:#fbbf24; font-weight:700;'>Żółte</span> - wybrana jednostka<br/>"
-        "<span style='color:#22c55e; font-weight:700;'>Zielone</span> - ruch<br/>"
-        "<span style='color:#a855f7; font-weight:700;'>Fioletowe</span> - atak<br/>"
-        "<span style='color:#38bdf8; font-weight:700;'>Niebieskie</span> - leczenie<br/>"
-        "<span style='color:#9ca3af; font-weight:700;'>Szare</span> - blokada"
-        "</div>"
-        );
-
-    ui->labelTileInfo->setText(buildDefaultTileInfoText());
-
     connect(ui->btnBackToMenu, &QPushButton::clicked,
             this, &BattlePage::backToMenuClicked);
 
@@ -86,8 +78,33 @@ BattlePage::BattlePage(QWidget *parent)
                 m_controller->endTurn();
                 updateTurnInfo();
                 refreshStatistics();
-                updateTileInfo();
                 redrawBoard();
+            });
+
+    connect(ui->btnShowBattleLog, &QPushButton::clicked, this, [this]()
+            {
+                if (!m_controller)
+                    return;
+
+                const QStringList log = m_controller->getGameState().getBattleLog();
+
+                QDialog dialog(this);
+                dialog.setWindowTitle("Log bitwy");
+                dialog.resize(700, 500);
+
+                QVBoxLayout* layout = new QVBoxLayout(&dialog);
+
+                QPlainTextEdit* textEdit = new QPlainTextEdit(&dialog);
+                textEdit->setReadOnly(true);
+                textEdit->setPlainText(log.join("\n"));
+
+                QPushButton* btnClose = new QPushButton("Zamknij", &dialog);
+                connect(btnClose, &QPushButton::clicked, &dialog, &QDialog::accept);
+
+                layout->addWidget(textEdit);
+                layout->addWidget(btnClose);
+
+                dialog.exec();
             });
 
     updateTurnInfo();
@@ -103,6 +120,7 @@ BattlePage::~BattlePage()
 void BattlePage::setController(GameController* controller)
 {
     m_controller = controller;
+    m_postGameDialogShown = false;
 
     updateTurnInfo();
     refreshStatistics();
@@ -142,12 +160,37 @@ void BattlePage::updateTurnInfo()
 {
     int currentTurn = 1;
     TeamSide currentSide = TeamSide::Player;
+    bool gameFinished = false;
+    TeamSide winnerSide = TeamSide::Player;
 
     if (m_controller)
     {
         const GameState& gameState = m_controller->getGameState();
         currentTurn = gameState.getCurrentTurn();
         currentSide = gameState.getCurrentSide();
+        gameFinished = gameState.isGameFinished();
+        winnerSide = gameState.getWinnerSide();
+    }
+
+    if (gameFinished)
+    {
+        const bool playerWon = winnerSide == TeamSide::Player;
+        const QString winnerText = playerWon ? "ZWYCIĘSTWO: NIEBIESCY" : "ZWYCIĘSTWO: CZERWONI";
+        const QString winnerColor = playerWon ? "#60a5fa" : "#f87171";
+
+        ui->labelTurnNumber->setText(
+            QString(
+                "<div style='text-align:center;'>"
+                "<div style='font-size:18px; font-weight:800; color:#f9fafb;'>Koniec gry</div>"
+                "<div style='font-size:14px; font-weight:800; color:%1; margin-top:4px;'>%2</div>"
+                "<div style='font-size:12px; color:#d1d5db; margin-top:4px;'>Liczba tur: %3</div>"
+                "</div>"
+                )
+                .arg(winnerColor)
+                .arg(winnerText)
+                .arg(currentTurn)
+            );
+        return;
     }
 
     const bool isPlayerTurn = currentSide == TeamSide::Player;
@@ -194,11 +237,23 @@ void BattlePage::refreshStatistics()
     const int playerCount = gameState.getPlayerTeam().getAliveUnitsCount();
     const int enemyCount = gameState.getEnemyTeam().getAliveUnitsCount();
 
+    const TeamBattleStats playerStats = gameState.getStatsForSide(TeamSide::Player);
+    const TeamBattleStats enemyStats = gameState.getStatsForSide(TeamSide::Enemy);
+
+    ui->labelBattleLog->setText(gameState.getLastActionMessage());
+
+    if (gameState.isGameFinished() && !m_postGameDialogShown)
+    {
+        m_postGameDialogShown = true;
+        QTimer::singleShot(0, this, [this]()
+                           {
+                               showPostGameSummaryDialog();
+                           });
+    }
+
     const bool isPlayerTurn = gameState.getCurrentSide() == TeamSide::Player;
     const QString currentSideText = isPlayerTurn ? "NIEBIESCY" : "CZERWONI";
     const QString currentSideColor = isPlayerTurn ? "#60a5fa" : "#f87171";
-
-    ui->labelBattleLog->setText(gameState.getLastActionMessage());
 
     ui->labelTeamsInfo->setText(
         QString(
@@ -211,6 +266,10 @@ void BattlePage::refreshStatistics()
             "<span style='color:%3; font-weight:800; font-size:16px;'>%4</span>"
             "<br/>"
             "<span style='color:#fbbf24; font-weight:700;'>AP drużyny:</span> %5 / %6"
+            "<br/><br/>"
+            "<span style='color:#60a5fa; font-weight:700;'>Niebiescy trafienia:</span> %7 / %8 (%9%%)"
+            "<br/>"
+            "<span style='color:#f87171; font-weight:700;'>Czerwoni trafienia:</span> %10 / %11 (%12%%)"
             "</div>"
             )
             .arg(playerCount)
@@ -219,9 +278,15 @@ void BattlePage::refreshStatistics()
             .arg(currentSideText)
             .arg(gameState.getCurrentTurnActionPoints())
             .arg(gameState.getMaxTurnActionPoints())
+            .arg(playerStats.hits)
+            .arg(playerStats.shotsFired)
+            .arg(gameState.getAccuracyPercent(TeamSide::Player))
+            .arg(enemyStats.hits)
+            .arg(enemyStats.shotsFired)
+            .arg(gameState.getAccuracyPercent(TeamSide::Enemy))
         );
 
-    if (gameState.hasSelectedPosition())
+    if (gameState.hasSelectedPosition() && !gameState.isGameFinished())
     {
         const Tile* tile = gameState.getBoard().getTile(
             gameState.getSelectedX(),
@@ -270,8 +335,8 @@ void BattlePage::refreshStatistics()
                     "<span style='color:#22c55e; font-weight:700;'>Zielone pola:</span> %14<br/>"
                     "<span style='color:#a855f7; font-weight:700;'>Fioletowe cele ataku:</span> %15<br/>"
                     "<span style='color:#38bdf8; font-weight:700;'>Niebieskie cele leczenia:</span> %16<br/>"
-                    "<span style='color:#cbd5e1;'>AP drużyny:</span> %17 / %18<br/><br/>"
-                    "<span style='color:#9ca3af;'>Jak grać:</span> kliknij jednostkę, potem zielone pole, fioletowego przeciwnika albo niebieskiego sojusznika. Po ruchu możesz dalej atakować lub leczyć, jeśli masz AP."
+                    "<span style='color:#cbd5e1;'>AP drużyny:</span> %17 / %18<br/>"
+                    "<span style='color:#fbbf24;'>Tura:</span> %19"
                     "</div>"
                     )
                     .arg(unit->getHealth())
@@ -292,6 +357,7 @@ void BattlePage::refreshStatistics()
                     .arg(healCount)
                     .arg(gameState.getCurrentTurnActionPoints())
                     .arg(gameState.getMaxTurnActionPoints())
+                    .arg(gameState.getCurrentTurn())
                 );
 
             return;
@@ -309,13 +375,139 @@ void BattlePage::refreshStatistics()
         QString(
             "<div style='line-height:1.8; color:#9ca3af; text-align:center;'>"
             "AP drużyny: <b>%1 / %2</b><br/>"
-            "Ruch kosztuje tyle AP, ile wynika z terenu i ścieżki.<br/>"
+            "Tura: <b>%3</b><br/>"
+            "Niebiescy trafienia: <b>%4 / %5</b><br/>"
+            "Czerwoni trafienia: <b>%6 / %7</b><br/>"
             "Kliknij swoją jednostkę, a potem puste pole, niebieskiego sojusznika do leczenia albo fioletowego przeciwnika."
             "</div>"
             )
             .arg(gameState.getCurrentTurnActionPoints())
             .arg(gameState.getMaxTurnActionPoints())
+            .arg(gameState.getCurrentTurn())
+            .arg(playerStats.hits)
+            .arg(playerStats.shotsFired)
+            .arg(enemyStats.hits)
+            .arg(enemyStats.shotsFired)
         );
+}
+void BattlePage::showPostGameSummaryDialog()
+{
+    if (!m_controller)
+        return;
+
+    const GameState& gameState = m_controller->getGameState();
+
+    const TeamBattleStats playerStats = gameState.getStatsForSide(TeamSide::Player);
+    const TeamBattleStats enemyStats = gameState.getStatsForSide(TeamSide::Enemy);
+
+    const bool playerWon = gameState.getWinnerSide() == TeamSide::Player;
+    const QString winnerColor = playerWon ? "#60a5fa" : "#f87171";
+    const QString winnerText = playerWon ? "Wygrywają Niebiescy" : "Wygrywają Czerwoni";
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("Podsumowanie bitwy");
+    dialog.resize(900, 600);
+    dialog.setModal(true);
+
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    layout->setContentsMargins(24, 24, 24, 20);
+    layout->setSpacing(18);
+
+    QLabel* summaryLabel = new QLabel(&dialog);
+    summaryLabel->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+    summaryLabel->setWordWrap(true);
+
+    summaryLabel->setText(
+        QString(
+            "<div style='font-family:Segoe UI, Arial, sans-serif; width:100%%;'>"
+
+            "<div style='text-align:center; margin-bottom:20px;'>"
+            "<div style='font-size:30px; font-weight:900; color:#f9fafb;'>PODSUMOWANIE BITWY</div>"
+            "<div style='margin-top:10px; font-size:20px; font-weight:800; color:%1;'>%2</div>"
+            "<div style='margin-top:8px; font-size:16px; color:#fbbf24; font-weight:800;'>Liczba tur: %3</div>"
+            "</div>"
+
+            "<div style='text-align:center;'>"
+            "<table style='margin-left:auto; margin-right:auto; border-collapse:separate; border-spacing:22px 0;'>"
+            "<tr>"
+
+            "<td valign='top' "
+            "style='min-width:300px; max-width:300px; background-color:#111827; border:2px solid #2563eb; border-radius:16px; padding:18px 22px;'>"
+            "<div style='text-align:center; font-size:24px; font-weight:900; color:#60a5fa; margin-bottom:14px;'>NIEBIESCY</div>"
+            "<div style='font-size:18px; line-height:2.0; color:#e5e7eb;'>"
+            "<b style='color:#93c5fd;'>Straty:</b> %4<br/>"
+            "<b style='color:#93c5fd;'>Zadane obrażenia:</b> %5<br/>"
+            "<b style='color:#93c5fd;'>Trafienia:</b> %6 / %7<br/>"
+            "<b style='color:#93c5fd;'>Skuteczność:</b> %8%%<br/>"
+            "<b style='color:#93c5fd;'>Zniszczone jednostki:</b> %9"
+            "</div>"
+            "</td>"
+
+            "<td valign='top' "
+            "style='min-width:300px; max-width:300px; background-color:#111827; border:2px solid #dc2626; border-radius:16px; padding:18px 22px;'>"
+            "<div style='text-align:center; font-size:24px; font-weight:900; color:#f87171; margin-bottom:14px;'>CZERWONI</div>"
+            "<div style='font-size:18px; line-height:2.0; color:#e5e7eb;'>"
+            "<b style='color:#fca5a5;'>Straty:</b> %10<br/>"
+            "<b style='color:#fca5a5;'>Zadane obrażenia:</b> %11<br/>"
+            "<b style='color:#fca5a5;'>Trafienia:</b> %12 / %13<br/>"
+            "<b style='color:#fca5a5;'>Skuteczność:</b> %14%%<br/>"
+            "<b style='color:#fca5a5;'>Zniszczone jednostki:</b> %15"
+            "</div>"
+            "</td>"
+
+            "</tr>"
+            "</table>"
+            "</div>"
+
+            "<div style='margin-top:24px; text-align:center; color:#9ca3af; font-size:14px;'>"
+            "Po zamknięciu wrócisz do menu głównego."
+            "</div>"
+
+            "</div>"
+            )
+            .arg(winnerColor)
+            .arg(winnerText)
+            .arg(gameState.getCurrentTurn())
+            .arg(gameState.getLossesForSide(TeamSide::Player))
+            .arg(playerStats.damageDealt)
+            .arg(playerStats.hits)
+            .arg(playerStats.shotsFired)
+            .arg(gameState.getAccuracyPercent(TeamSide::Player))
+            .arg(playerStats.unitsDestroyed)
+            .arg(gameState.getLossesForSide(TeamSide::Enemy))
+            .arg(enemyStats.damageDealt)
+            .arg(enemyStats.hits)
+            .arg(enemyStats.shotsFired)
+            .arg(gameState.getAccuracyPercent(TeamSide::Enemy))
+            .arg(enemyStats.unitsDestroyed)
+        );
+
+    QPushButton* btnClose = new QPushButton("Wróć do menu", &dialog);
+    btnClose->setMinimumHeight(44);
+    connect(btnClose, &QPushButton::clicked, &dialog, &QDialog::accept);
+
+    layout->addWidget(summaryLabel, 1);
+    layout->addWidget(btnClose);
+
+    dialog.setStyleSheet(
+        "QDialog { background-color: #1f2937; }"
+        "QLabel { color: white; background: transparent; }"
+        "QPushButton {"
+        "   background-color: #374151;"
+        "   color: white;"
+        "   border: 1px solid #4b5563;"
+        "   padding: 8px 16px;"
+        "   border-radius: 8px;"
+        "   font-weight: 700;"
+        "   font-size: 15px;"
+        "}"
+        "QPushButton:hover { background-color: #4b5563; }"
+        "QPushButton:pressed { background-color: #111827; }"
+        );
+
+    dialog.exec();
+
+    emit backToMenuClicked();
 }
 
 void BattlePage::onTileClicked(int x, int y)
@@ -331,18 +523,6 @@ void BattlePage::onTileClicked(int x, int y)
     redrawBoard();
 }
 
-void BattlePage::resizeEvent(QResizeEvent *event)
-{
-    QWidget::resizeEvent(event);
-    redrawBoard();
-}
-
-void BattlePage::showEvent(QShowEvent *event)
-{
-    QWidget::showEvent(event);
-    redrawBoard();
-}
-
 void BattlePage::updateTileInfo()
 {
     if (!m_controller)
@@ -351,17 +531,26 @@ void BattlePage::updateTileInfo()
         return;
     }
 
-    const GameState& state = m_controller->getGameState();
+    const GameState& gameState = m_controller->getGameState();
 
-    if (state.hasSelectedPosition())
+    if (!gameState.hasSelectedPosition())
     {
-        const Tile* tile = state.getBoard().getTile(
-            state.getSelectedX(),
-            state.getSelectedY());
-
-        ui->labelTileInfo->setText(buildTileInfoText(tile));
+        ui->labelTileInfo->setText(buildDefaultTileInfoText());
         return;
     }
 
-    ui->labelTileInfo->setText(buildDefaultTileInfoText());
+    const Tile* tile = gameState.getBoard().getTile(gameState.getSelectedX(), gameState.getSelectedY());
+    ui->labelTileInfo->setText(buildTileInfoText(tile));
+}
+
+void BattlePage::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    QTimer::singleShot(0, this, [this]() { redrawBoard(); });
+}
+
+void BattlePage::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    QTimer::singleShot(0, this, [this]() { redrawBoard(); });
 }

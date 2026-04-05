@@ -7,6 +7,7 @@
 
 #include <QRandomGenerator>
 #include <algorithm>
+#include <QVector>
 
 namespace
 {
@@ -36,7 +37,6 @@ void generateForestAndMountains(Board& board)
     const int centerX = size / 2;
     const int centerY = size / 2;
 
-    // 2-3 skupiska lasu
     const int forestClusters = (size >= 15) ? 3 : 2;
     for (int i = 0; i < forestClusters; ++i)
     {
@@ -53,7 +53,6 @@ void generateForestAndMountains(Board& board)
         }
     }
 
-    // wzgórza bardziej w środkowej części planszy
     const int mountainCount = (size >= 15) ? 5 : 3;
     for (int i = 0; i < mountainCount; ++i)
     {
@@ -66,24 +65,38 @@ void generateForestAndMountains(Board& board)
 void generateRiverAndBridge(Board& board)
 {
     const int size = board.getWidth();
-    int riverColumn = size / 2 + QRandomGenerator::global()->bounded(-1, 2);
 
+    int riverColumn = size / 2 + QRandomGenerator::global()->bounded(-1, 2);
     riverColumn = std::clamp(riverColumn, 2, size - 3);
 
+    // prosta pionowa rzeka
     for (int y = 0; y < size; ++y)
     {
         setTerrainIfPossible(board, riverColumn, y, TerrainType::Water);
-
-        // lekki meander rzeki
-        if (y % 4 == 2)
-            riverColumn = std::clamp(riverColumn + QRandomGenerator::global()->bounded(-1, 2), 2, size - 3);
     }
 
-    const int bridgeY = size / 2;
-    setTerrainIfPossible(board, riverColumn, bridgeY, TerrainType::Plain);
+    QVector<int> crossingRows;
 
-    if (bridgeY - 1 >= 0)
-        setTerrainIfPossible(board, riverColumn, bridgeY - 1, TerrainType::Plain);
+    if (size >= 20)
+    {
+        crossingRows.append(size / 3);
+        crossingRows.append((2 * size) / 3);
+    }
+    else
+    {
+        crossingRows.append(size / 2);
+    }
+
+    for (int crossingY : crossingRows)
+    {
+        // most poziomy dokładnie w miejscu przerwy rzeki
+        for (int dx = -1; dx <= 1; ++dx)
+        {
+            const int x = riverColumn + dx;
+            if (x >= 0 && x < size)
+                setTerrainIfPossible(board, x, crossingY, TerrainType::Bridge);
+        }
+    }
 }
 
 void generateBuildings(Board& board)
@@ -92,7 +105,6 @@ void generateBuildings(Board& board)
     const int centerX = size / 2;
     const int centerY = size / 2;
 
-    // główne zabudowania bliżej środka
     for (int y = centerY - 2; y <= centerY + 2; y += 2)
     {
         for (int x = centerX - 2; x <= centerX + 2; ++x)
@@ -102,7 +114,6 @@ void generateBuildings(Board& board)
         }
     }
 
-    // trochę lasu wokół, żeby teren był bardziej taktyczny
     for (int i = 0; i < size / 3; ++i)
     {
         const int x = QRandomGenerator::global()->bounded(1, size - 1);

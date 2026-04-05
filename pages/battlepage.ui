@@ -344,6 +344,13 @@ Szare - blokada</string>
              </spacer>
             </item>
             <item>
+             <widget class="QPushButton" name="btnShowBattleLog">
+              <property name="text">
+               <string>Historia gry</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="btnEndTurn">
               <property name="text">
                <string>Koniec tury</string>

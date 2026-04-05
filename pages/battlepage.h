@@ -2,10 +2,10 @@
 #define BATTLEPAGE_H
 
 #include <QWidget>
-#include <QResizeEvent>
-#include <QShowEvent>
 
 class GameController;
+class QResizeEvent;
+class QShowEvent;
 
 namespace Ui {
 class BattlePage;
@@ -20,9 +20,10 @@ public:
     ~BattlePage();
 
     void setController(GameController* controller);
-
+    void redrawBoard();
     void updateTurnInfo();
     void refreshStatistics();
+    void updateTileInfo();
 
 signals:
     void backToMenuClicked();
@@ -32,13 +33,14 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
-    void redrawBoard();
     void onTileClicked(int x, int y);
-    void updateTileInfo();
+    void showPostGameSummaryDialog();
 
+private:
     Ui::BattlePage *ui;
     GameController* m_controller = nullptr;
     bool m_isDrawingBoard = false;
+    bool m_postGameDialogShown = false;
 };
 
 #endif // BATTLEPAGE_H
