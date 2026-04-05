@@ -12,13 +12,68 @@
 #include "../application/models/enums/teamside.h"
 #include "../application/services/battleboardservice.h"
 #include "../config/gameconfig.h"
-#include "../application/models/player.h"
+
+namespace
+{
+QString terrainToDisplayName(TerrainType terrain)
+{
+    switch (terrain)
+    {
+    case TerrainType::Plain:    return "Równina";
+    case TerrainType::Forest:   return "Las";
+    case TerrainType::Mountain: return "Wzgórze";
+    case TerrainType::Water:    return "Woda";
+    case TerrainType::Building: return "Budynek";
+    }
+
+    return "Nieznany";
+}
+
+QString buildDefaultTileInfoText()
+{
+    return "Teren: -\n"
+           "Koszt ruchu: -\n"
+           "Osłona: -\n"
+           "Bonus zasięgu: -\n"
+           "Przechodnie: -";
+}
+
+QString buildTileInfoText(const Tile* tile)
+{
+    if (!tile)
+        return buildDefaultTileInfoText();
+
+    const QString terrainName = terrainToDisplayName(tile->getTerrain());
+    const QString walkableText = tile->isWalkable() ? "tak" : "nie";
+
+    return QString("Teren: %1\n"
+                   "Koszt ruchu: %2\n"
+                   "Osłona: +%3\n"
+                   "Bonus zasięgu: +%4\n"
+                   "Przechodnie: %5")
+        .arg(terrainName)
+        .arg(tile->getMovementCost())
+        .arg(tile->getCoverBonus())
+        .arg(tile->getRangeBonus())
+        .arg(walkableText);
+}
+}
 
 BattlePage::BattlePage(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::BattlePage)
 {
     ui->setupUi(this);
+
+    ui->labelLegend->setText(
+        "Żółte - wybrana jednostka\n"
+        "Zielone - ruch\n"
+        "Fioletowe - atak\n"
+        "Niebieskie - leczenie\n"
+        "Szare - blokada"
+        );
+
+    ui->labelTileInfo->setText(buildDefaultTileInfoText());
 
     connect(ui->btnBackToMenu, &QPushButton::clicked,
             this, &BattlePage::backToMenuClicked);
@@ -31,11 +86,13 @@ BattlePage::BattlePage(QWidget *parent)
                 m_controller->endTurn();
                 updateTurnInfo();
                 refreshStatistics();
+                updateTileInfo();
                 redrawBoard();
             });
 
     updateTurnInfo();
     refreshStatistics();
+    updateTileInfo();
 }
 
 BattlePage::~BattlePage()
@@ -49,6 +106,7 @@ void BattlePage::setController(GameController* controller)
 
     updateTurnInfo();
     refreshStatistics();
+    updateTileInfo();
 
     QTimer::singleShot(0, this, [this]()
                        {
@@ -133,8 +191,8 @@ void BattlePage::refreshStatistics()
 
     const GameState& gameState = m_controller->getGameState();
 
-    int playerCount = gameState.getPlayerTeam().getAliveUnitsCount();
-    int enemyCount = gameState.getEnemyTeam().getAliveUnitsCount();
+    const int playerCount = gameState.getPlayerTeam().getAliveUnitsCount();
+    const int enemyCount = gameState.getEnemyTeam().getAliveUnitsCount();
 
     const bool isPlayerTurn = gameState.getCurrentSide() == TeamSide::Player;
     const QString currentSideText = isPlayerTurn ? "NIEBIESCY" : "CZERWONI";
@@ -207,13 +265,13 @@ void BattlePage::refreshStatistics()
                     "<span style='color:#f9a8d4; font-weight:700;'>Celność:</span> %9<br/>"
                     "<span style='color:#a7f3d0; font-weight:700;'>Unik:</span> %10<br/>"
                     "<span style='color:#38bdf8; font-weight:700;'>Leczenie:</span> %11<br/>"
-                    "<span style='color:#d1d5db;'>Ruch w turze:</span> %12<br/>"
-                    "<span style='color:#d1d5db;'>Akcja w turze:</span> %13<br/>"
+                    "<span style='color:#d1d5db;'>Ruch wykonany wcześniej:</span> %12<br/>"
+                    "<span style='color:#d1d5db;'>Atak / leczenie wcześniej:</span> %13<br/>"
                     "<span style='color:#22c55e; font-weight:700;'>Zielone pola:</span> %14<br/>"
-                    "<span style='color:#ef4444; font-weight:700;'>Czerwone cele:</span> %15<br/>"
-                    "<span style='color:#38bdf8; font-weight:700;'>Niebieskie cele:</span> %16<br/>"
+                    "<span style='color:#a855f7; font-weight:700;'>Fioletowe cele ataku:</span> %15<br/>"
+                    "<span style='color:#38bdf8; font-weight:700;'>Niebieskie cele leczenia:</span> %16<br/>"
                     "<span style='color:#cbd5e1;'>AP drużyny:</span> %17 / %18<br/><br/>"
-                    "<span style='color:#9ca3af;'>Jak grać:</span> kliknij jednostkę, potem zielone pole, czerwonego przeciwnika albo niebieskiego sojusznika."
+                    "<span style='color:#9ca3af;'>Jak grać:</span> kliknij jednostkę, potem zielone pole, fioletowego przeciwnika albo niebieskiego sojusznika. Po ruchu możesz dalej atakować lub leczyć, jeśli masz AP."
                     "</div>"
                     )
                     .arg(unit->getHealth())
@@ -252,7 +310,7 @@ void BattlePage::refreshStatistics()
             "<div style='line-height:1.8; color:#9ca3af; text-align:center;'>"
             "AP drużyny: <b>%1 / %2</b><br/>"
             "Ruch kosztuje tyle AP, ile wynika z terenu i ścieżki.<br/>"
-            "Kliknij swoją jednostkę, a potem puste pole, sojusznika do leczenia albo przeciwnika."
+            "Kliknij swoją jednostkę, a potem puste pole, niebieskiego sojusznika do leczenia albo fioletowego przeciwnika."
             "</div>"
             )
             .arg(gameState.getCurrentTurnActionPoints())
@@ -269,6 +327,7 @@ void BattlePage::onTileClicked(int x, int y)
 
     updateTurnInfo();
     refreshStatistics();
+    updateTileInfo();
     redrawBoard();
 }
 
@@ -282,4 +341,27 @@ void BattlePage::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     redrawBoard();
+}
+
+void BattlePage::updateTileInfo()
+{
+    if (!m_controller)
+    {
+        ui->labelTileInfo->setText(buildDefaultTileInfoText());
+        return;
+    }
+
+    const GameState& state = m_controller->getGameState();
+
+    if (state.hasSelectedPosition())
+    {
+        const Tile* tile = state.getBoard().getTile(
+            state.getSelectedX(),
+            state.getSelectedY());
+
+        ui->labelTileInfo->setText(buildTileInfoText(tile));
+        return;
+    }
+
+    ui->labelTileInfo->setText(buildDefaultTileInfoText());
 }

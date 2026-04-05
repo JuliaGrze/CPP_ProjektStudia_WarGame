@@ -34,6 +34,7 @@ protected:
 private:
     void redrawBoard();
     void onTileClicked(int x, int y);
+    void updateTileInfo();
 
     Ui::BattlePage *ui;
     GameController* m_controller = nullptr;

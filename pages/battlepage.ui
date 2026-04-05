@@ -128,6 +128,21 @@ QPushButton#btnBackToMenu {
 
 QPushButton#btnBackToMenu:hover {
     background-color: #991b1b;
+}
+
+QLabel#labelTileInfoTitle,
+QLabel#labelLegendTitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f9fafb;
+    padding-top: 6px;
+    padding-bottom: 4px;
+}
+
+QLabel#labelTileInfo,
+QLabel#labelLegend {
+    font-size: 13px;
+    color: #e5e7eb;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -204,6 +219,21 @@ Ruch: -</string>
              </widget>
             </item>
             <item>
+             <widget class="QLabel" name="labelTileInfoTitle">
+              <property name="text">
+               <string>Informacje o polu</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="labelTileInfo">
+              <property name="text">
+               <string>Brak wybranego pola.
+Kliknij swoją jednostkę, aby zobaczyć informacje o terenie.</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="verticalSpacer_2">
               <property name="orientation">
                <enum>Qt::Orientation::Vertical</enum>
@@ -269,7 +299,7 @@ Ruch: -</string>
             <item>
              <widget class="QLabel" name="labelActionsTitle">
               <property name="text">
-               <string>Działania</string>
+               <string>Pole i pomoc</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
@@ -277,30 +307,20 @@ Ruch: -</string>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="btnMove">
+             <widget class="QLabel" name="labelLegendTitle">
               <property name="text">
-               <string>Ruch</string>
+               <string>Legenda</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="btnAttack">
+             <widget class="QLabel" name="labelLegend">
               <property name="text">
-               <string>Atak</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnEndTurn">
-              <property name="text">
-               <string>Koniec tury</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnBackToMenu">
-              <property name="text">
-               <string>Powrót</string>
+               <string>Żółte - wybrana jednostka
+Zielone - ruch
+Fioletowe - atak
+Niebieskie - leczenie
+Szare - blokada</string>
               </property>
              </widget>
             </item>
@@ -316,6 +336,20 @@ Ruch: -</string>
                </size>
               </property>
              </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnEndTurn">
+              <property name="text">
+               <string>Koniec tury</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnBackToMenu">
+              <property name="text">
+               <string>Powrót</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
