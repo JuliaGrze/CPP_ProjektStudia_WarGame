@@ -29,7 +29,7 @@ QString getTerrainPath(TerrainType terrain)
     case TerrainType::Water:
         return ":/icons/images/terrain/ocean.png";
     case TerrainType::Building:
-        return ":/icons/images/terrain/mountain.png";
+        return ":/icons/images/terrain/building .png";
     }
 
     return ":/icons/images/terrain/grass.png";
