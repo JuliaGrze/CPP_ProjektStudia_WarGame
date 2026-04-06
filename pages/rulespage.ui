@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RulesPage</class>
+ <widget class="QWidget" name="RulesPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget {
+    background-color: #1e1f26;
+    color: #ffffff;
+}
+
+/* Tytuł */
+QLabel#labelTitle {
+    font-size: 28px;
+    font-weight: bold;
+    qproperty-alignment: AlignCenter;
+    margin-bottom: 10px;
+}
+
+/* Panel z zasadami */
+QTextBrowser {
+    background-color: #2a2c36;
+    border: 1px solid #3d4252;
+    border-radius: 16px;
+    padding: 18px;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* Scrollbar */
+QScrollBar:vertical {
+    border: none;
+    background: #2a2c36;
+    width: 10px;
+    margin: 4px 0 4px 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #555b6e;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #6c7390;
+}
+
+/* Button */
+QPushButton {
+    background-color: #2f80ed;
+    color: white;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: 15px;
+    border: none;
+    min-width: 140px;
+}
+
+QPushButton:hover {
+    background-color: #3c94ff;
+}
+
+QPushButton:pressed {
+    background-color: #256fd1;
+}</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <widget class="QLabel" name="labelTitle">
+     <property name="text">
+      <string>ZASADY GRY</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTextBrowser" name="textBrowser"/>
+   </item>
+   <item>
+    <widget class="QPushButton" name="btnBack">
+     <property name="text">
+      <string>Powrót</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

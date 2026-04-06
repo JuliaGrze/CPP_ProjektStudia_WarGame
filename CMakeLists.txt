@@ -56,6 +56,7 @@ qt_add_executable(WarGame
     application/engine/defaultattackstrategy.h
     application/engine/defaultattackstrategy.cpp
     application/engine/attackresolver.h application/engine/attackresolver.cpp
+    pages/rulespage.h pages/rulespage.cpp pages/rulespage.ui
 
 )
 

@@ -4,6 +4,7 @@
 #include "pages/menupage.h"
 #include "pages/configpage.h"
 #include "pages/battlepage.h"
+#include "pages/rulespage.h"
 #include "application/controllers/gamecontroller.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -12,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     , menuPage(new MenuPage(this))
     , configPage(new ConfigPage(this))
     , battlePage(new BattlePage(this))
+    , rulesPage(new RulesPage(this))
     , gameController(new GameController())
 {
     ui->setupUi(this);
@@ -21,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->stackedWidget->addWidget(menuPage);
     ui->stackedWidget->addWidget(configPage);
     ui->stackedWidget->addWidget(battlePage);
+    ui->stackedWidget->addWidget(rulesPage);
 
     ui->stackedWidget->setCurrentWidget(menuPage);
 
@@ -44,6 +47,16 @@ MainWindow::MainWindow(QWidget *parent)
             });
 
     connect(battlePage, &BattlePage::backToMenuClicked, this, [this]()
+            {
+                ui->stackedWidget->setCurrentWidget(menuPage);
+            });
+
+    connect(menuPage, &MenuPage::rulesClicked, this, [this]()
+            {
+                ui->stackedWidget->setCurrentWidget(rulesPage);
+            });
+
+    connect(rulesPage, &RulesPage::backClicked, this, [this]()
             {
                 ui->stackedWidget->setCurrentWidget(menuPage);
             });
