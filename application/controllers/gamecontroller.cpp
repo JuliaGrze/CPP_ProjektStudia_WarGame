@@ -2,7 +2,10 @@
 
 #include "../services/gamesetupservice.h"
 
-GameController::GameController() = default;
+GameController::GameController(QObject* parent)
+    : QObject(parent)
+{
+}
 
 void GameController::startGame(const GameConfig& config)
 {
@@ -15,6 +18,7 @@ void GameController::startGame(const GameConfig& config)
             .arg(m_state.getCurrentTurnActionPoints()));
 
     processAiTurnIfNeeded();
+    emit stateChanged();
 }
 
 void GameController::processAiTurnIfNeeded()
@@ -41,6 +45,7 @@ void GameController::handleTileClick(int x, int y)
 
     m_engine.handleTileClick(m_state, x, y);
     processAiTurnIfNeeded();
+    emit stateChanged();
 }
 
 void GameController::endTurn()
@@ -50,6 +55,7 @@ void GameController::endTurn()
 
     m_engine.endTurn(m_state);
     processAiTurnIfNeeded();
+    emit stateChanged();
 }
 
 const GameState& GameController::getGameState() const

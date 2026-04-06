@@ -37,6 +37,7 @@ protected:
 private:
     void onTileClicked(int x, int y);
     void showPostGameSummaryDialog();
+    void refreshView();
 
 private:
     Ui::BattlePage *ui;
