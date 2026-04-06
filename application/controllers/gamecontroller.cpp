@@ -13,13 +13,25 @@ void GameController::startGame(const GameConfig& config)
     m_state.setLastActionMessage(
         QString("Rozpoczęła się tura Niebieskich. AP drużyny: %1. Wybierz jednostkę, potem pole ruchu, sojusznika do leczenia albo przeciwnika.")
             .arg(m_state.getCurrentTurnActionPoints()));
+
+    processAiTurnIfNeeded();
 }
 
 void GameController::processAiTurnIfNeeded()
 {
-    // AI wyłączone.
-    // Jeśli później będziesz chciała znowu włączyć komputerowego przeciwnika,
-    // tutaj będzie można to przywrócić.
+    if (m_state.isGameFinished())
+        return;
+
+    while (!m_state.isGameFinished() && m_state.getCurrentSide() == TeamSide::Enemy)
+    {
+        m_aiController.performTurn(m_state, m_engine);
+
+        if (m_state.isGameFinished())
+            return;
+
+        if (m_state.getCurrentSide() == TeamSide::Enemy)
+            m_engine.endTurn(m_state);
+    }
 }
 
 void GameController::handleTileClick(int x, int y)
@@ -28,6 +40,7 @@ void GameController::handleTileClick(int x, int y)
         return;
 
     m_engine.handleTileClick(m_state, x, y);
+    processAiTurnIfNeeded();
 }
 
 void GameController::endTurn()
@@ -36,6 +49,7 @@ void GameController::endTurn()
         return;
 
     m_engine.endTurn(m_state);
+    processAiTurnIfNeeded();
 }
 
 const GameState& GameController::getGameState() const
