@@ -360,7 +360,7 @@ Szare - blokada</string>
             <item>
              <widget class="QPushButton" name="btnBackToMenu">
               <property name="text">
-               <string>Powrót</string>
+               <string>Powrót do menu</string>
               </property>
              </widget>
             </item>

@@ -406,7 +406,7 @@ void BattlePage::showPostGameSummaryDialog()
 
     QDialog dialog(this);
     dialog.setWindowTitle("Podsumowanie bitwy");
-    dialog.resize(900, 600);
+    dialog.resize(920, 640);
     dialog.setModal(true);
 
     QVBoxLayout* layout = new QVBoxLayout(&dialog);
@@ -460,7 +460,7 @@ void BattlePage::showPostGameSummaryDialog()
             "</div>"
 
             "<div style='margin-top:24px; text-align:center; color:#9ca3af; font-size:14px;'>"
-            "Po zamknięciu wrócisz do menu głównego."
+            "Wybierz, co chcesz zrobić dalej."
             "</div>"
 
             "</div>"
@@ -482,12 +482,42 @@ void BattlePage::showPostGameSummaryDialog()
             .arg(enemyStats.unitsDestroyed)
         );
 
-    QPushButton* btnClose = new QPushButton("Wróć do menu", &dialog);
-    btnClose->setMinimumHeight(44);
-    connect(btnClose, &QPushButton::clicked, &dialog, &QDialog::accept);
+    QPushButton* btnMenu = new QPushButton("Powrót do menu", &dialog);
+    QPushButton* btnPlayAgain = new QPushButton("Zagraj ponownie", &dialog);
+    QPushButton* btnNewConfig = new QPushButton("Nowa konfiguracja", &dialog);
+
+    btnMenu->setMinimumHeight(46);
+    btnPlayAgain->setMinimumHeight(46);
+    btnNewConfig->setMinimumHeight(46);
+
+    QString selectedAction = "menu";
+
+    connect(btnMenu, &QPushButton::clicked, &dialog, [&dialog, &selectedAction]()
+            {
+                selectedAction = "menu";
+                dialog.accept();
+            });
+
+    connect(btnPlayAgain, &QPushButton::clicked, &dialog, [&dialog, &selectedAction]()
+            {
+                selectedAction = "again";
+                dialog.accept();
+            });
+
+    connect(btnNewConfig, &QPushButton::clicked, &dialog, [&dialog, &selectedAction]()
+            {
+                selectedAction = "config";
+                dialog.accept();
+            });
+
+    QHBoxLayout* buttonsLayout = new QHBoxLayout();
+    buttonsLayout->setSpacing(12);
+    buttonsLayout->addWidget(btnMenu);
+    buttonsLayout->addWidget(btnPlayAgain);
+    buttonsLayout->addWidget(btnNewConfig);
 
     layout->addWidget(summaryLabel, 1);
-    layout->addWidget(btnClose);
+    layout->addLayout(buttonsLayout);
 
     dialog.setStyleSheet(
         "QDialog { background-color: #1f2937; }"
@@ -497,7 +527,7 @@ void BattlePage::showPostGameSummaryDialog()
         "   color: white;"
         "   border: 1px solid #4b5563;"
         "   padding: 8px 16px;"
-        "   border-radius: 8px;"
+        "   border-radius: 10px;"
         "   font-weight: 700;"
         "   font-size: 15px;"
         "}"
@@ -507,7 +537,18 @@ void BattlePage::showPostGameSummaryDialog()
 
     dialog.exec();
 
-    emit backToMenuClicked();
+    if (selectedAction == "again")
+    {
+        emit playAgainClicked();
+    }
+    else if (selectedAction == "config")
+    {
+        emit newConfigurationClicked();
+    }
+    else
+    {
+        emit backToMenuClicked();
+    }
 }
 
 void BattlePage::onTileClicked(int x, int y)

@@ -32,7 +32,17 @@ MainWindow::MainWindow(QWidget *parent)
                 ui->stackedWidget->setCurrentWidget(configPage);
             });
 
+    connect(menuPage, &MenuPage::rulesClicked, this, [this]()
+            {
+                ui->stackedWidget->setCurrentWidget(rulesPage);
+            });
+
     connect(menuPage, &MenuPage::exitClicked, this, &MainWindow::close);
+
+    connect(rulesPage, &RulesPage::backClicked, this, [this]()
+            {
+                ui->stackedWidget->setCurrentWidget(menuPage);
+            });
 
     connect(configPage, &ConfigPage::backClicked, this, [this]()
             {
@@ -51,14 +61,17 @@ MainWindow::MainWindow(QWidget *parent)
                 ui->stackedWidget->setCurrentWidget(menuPage);
             });
 
-    connect(menuPage, &MenuPage::rulesClicked, this, [this]()
+    connect(battlePage, &BattlePage::newConfigurationClicked, this, [this]()
             {
-                ui->stackedWidget->setCurrentWidget(rulesPage);
+                ui->stackedWidget->setCurrentWidget(configPage);
             });
 
-    connect(rulesPage, &RulesPage::backClicked, this, [this]()
+    connect(battlePage, &BattlePage::playAgainClicked, this, [this]()
             {
-                ui->stackedWidget->setCurrentWidget(menuPage);
+                const GameConfig config = gameController->getGameConfig();
+                gameController->startGame(config);
+                battlePage->setController(gameController);
+                ui->stackedWidget->setCurrentWidget(battlePage);
             });
 }
 

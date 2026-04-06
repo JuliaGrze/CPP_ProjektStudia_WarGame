@@ -27,6 +27,8 @@ public:
 
 signals:
     void backToMenuClicked();
+    void playAgainClicked();
+    void newConfigurationClicked();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;

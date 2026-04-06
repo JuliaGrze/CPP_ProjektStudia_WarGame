@@ -1,7 +1,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "pages/rulespage.h"
 #include <QMainWindow>
 
 QT_BEGIN_NAMESPACE
@@ -13,6 +12,7 @@ QT_END_NAMESPACE
 class MenuPage;
 class ConfigPage;
 class BattlePage;
+class RulesPage;
 class GameController;
 
 class MainWindow : public QMainWindow
@@ -28,8 +28,8 @@ private:
     MenuPage *menuPage;
     ConfigPage *configPage;
     BattlePage *battlePage;
-    GameController *gameController;
     RulesPage *rulesPage;
+    GameController *gameController;
 };
 
 #endif // MAINWINDOW_H
