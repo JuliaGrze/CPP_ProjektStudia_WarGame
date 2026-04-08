@@ -14,13 +14,29 @@
 
 namespace
 {
+/**
+ * @brief Reprezentuje pozycję jednostki na planszy.
+ *
+ * Struktura pomocnicza przechowująca współrzędne jednostki
+ * oraz wskaźnik na obiekt tej jednostki.
+ */
 struct UnitPosition
 {
-    int x = -1;
-    int y = -1;
-    Unit* unit = nullptr;
+    int x = -1;        ///< Współrzędna X jednostki.
+    int y = -1;        ///< Współrzędna Y jednostki.
+    Unit* unit = nullptr; ///< Wskaźnik na jednostkę znajdującą się na planszy.
 };
 
+/**
+ * @brief Wyszukuje wszystkie żywe jednostki wybranej strony na planszy.
+ *
+ * Funkcja przeszukuje całą planszę i zwraca listę pozycji jednostek
+ * należących do wskazanej strony konfliktu.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param side Strona, dla której mają zostać znalezione jednostki.
+ * @return Lista pozycji jednostek należących do wskazanej strony.
+ */
 QList<UnitPosition> findUnits(const GameState& gameState, TeamSide side)
 {
     QList<UnitPosition> positions;
@@ -42,11 +58,34 @@ QList<UnitPosition> findUnits(const GameState& gameState, TeamSide side)
     return positions;
 }
 
+/**
+ * @brief Oblicza odległość Manhattan pomiędzy dwoma polami.
+ *
+ * Odległość Manhattan jest sumą bezwzględnych różnic współrzędnych X i Y.
+ *
+ * @param x1 Współrzędna X pierwszego pola.
+ * @param y1 Współrzędna Y pierwszego pola.
+ * @param x2 Współrzędna X drugiego pola.
+ * @param y2 Współrzędna Y drugiego pola.
+ * @return Odległość Manhattan pomiędzy dwoma polami.
+ */
 int manhattan(int x1, int y1, int x2, int y2)
 {
     return qAbs(x1 - x2) + qAbs(y1 - y2);
 }
 
+/**
+ * @brief Bezpiecznie zaznacza jednostkę na wskazanym polu.
+ *
+ * Funkcja symuluje kliknięcie pola planszy i sprawdza, czy po tej operacji
+ * jednostka została rzeczywiście zaznaczona jako aktywna.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param battleEngine Silnik obsługujący akcje wykonywane na planszy.
+ * @param x Współrzędna X pola.
+ * @param y Współrzędna Y pola.
+ * @return true, jeśli jednostka została poprawnie zaznaczona, w przeciwnym razie false.
+ */
 bool selectUnitSafely(GameState& gameState, BattleEngine& battleEngine, int x, int y)
 {
     if (gameState.isGameFinished())
@@ -61,6 +100,19 @@ bool selectUnitSafely(GameState& gameState, BattleEngine& battleEngine, int x, i
 }
 }
 
+/**
+ * @brief Wykonuje turę gracza sterowanego automatycznie.
+ *
+ * Metoda realizuje logikę działania przeciwnika komputerowego.
+ * Najpierw sprawdza możliwość wykonania ataku, a jeśli nie jest to możliwe,
+ * próbuje wykonać ruch prowadzący do zbliżenia się do przeciwnika
+ * z uwzględnieniem korzystniejszych pól planszy.
+ *
+ * Jeżeli żadna akcja nie może zostać wykonana, tura zostaje zakończona.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param battleEngine Silnik odpowiedzialny za obsługę akcji w trakcie walki.
+ */
 void AIController::performTurn(GameState& gameState, BattleEngine& battleEngine)
 {
     if (gameState.isGameFinished())

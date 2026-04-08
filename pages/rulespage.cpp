@@ -3,6 +3,14 @@
 
 #include <QPushButton>
 
+/**
+ * @brief Konstruktor strony zasad gry.
+ *
+ * Inicjalizuje interfejs użytkownika, ustawia treść zasad
+ * oraz podłącza przycisk powrotu do menu.
+ *
+ * @param parent Wskaźnik na widget nadrzędny.
+ */
 RulesPage::RulesPage(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::RulesPage)
@@ -15,11 +23,29 @@ RulesPage::RulesPage(QWidget *parent)
             this, &RulesPage::backClicked);
 }
 
+/**
+ * @brief Destruktor strony zasad.
+ */
 RulesPage::~RulesPage()
 {
     delete ui;
 }
 
+/**
+ * @brief Ustawia treść zasad gry w komponencie tekstowym.
+ *
+ * Metoda generuje i przypisuje sformatowany HTML zawierający:
+ * - cel gry,
+ * - przebieg rozgrywki,
+ * - opis terenu,
+ * - typy jednostek,
+ * - statystyki,
+ * - zasady walki,
+ * - punkty akcji,
+ * - działanie AI,
+ * - warunek zwycięstwa,
+ * - statystyki po zakończeniu gry.
+ */
 void RulesPage::setupRulesText()
 {
     ui->textBrowser->setHtml(R"(

@@ -10,12 +10,34 @@
 
 namespace
 {
+/**
+ * @brief Oblicza łączną liczbę jednostek w składzie drużyny.
+ *
+ * Funkcja sumuje liczbę wszystkich typów jednostek
+ * zdefiniowanych w składzie drużyny.
+ *
+ * @param comp Skład drużyny.
+ * @return Łączna liczba jednostek do rozmieszczenia.
+ */
 int getNeededUnitsCount(const TeamComposition& comp)
 {
     return comp.infantry + comp.tank + comp.artillery + comp.medic;
 }
 }
 
+/**
+ * @brief Rozmieszcza obie drużyny na planszy.
+ *
+ * Metoda oblicza liczbę jednostek każdej drużyny, generuje
+ * odpowiednie pozycje startowe dla gracza i przeciwnika,
+ * a następnie rozmieszcza jednostki na planszy.
+ *
+ * @param board Plansza, na której rozmieszczane są jednostki.
+ * @param playerTeam Drużyna gracza.
+ * @param enemyTeam Drużyna przeciwnika.
+ * @param playerComp Skład drużyny gracza.
+ * @param enemyComp Skład drużyny przeciwnika.
+ */
 void UnitPlacementHelper::placeTeams(Board& board,
                                      Team& playerTeam,
                                      Team& enemyTeam,
@@ -35,6 +57,22 @@ void UnitPlacementHelper::placeTeams(Board& board,
     placeSingleTeam(board, enemyTeam, enemyComp, TeamSide::Enemy, enemyPositions);
 }
 
+/**
+ * @brief Generuje losowe pozycje startowe dla wybranej strony.
+ *
+ * Metoda wybiera kandydackie pola z odpowiedniej części planszy:
+ * - dla gracza z lewej strony,
+ * - dla przeciwnika z prawej strony.
+ *
+ * Uwzględniane są wyłącznie pola przechodnie i niezajęte.
+ * Następnie lista pól jest losowo mieszana i ograniczana
+ * do wymaganej liczby pozycji.
+ *
+ * @param board Plansza gry.
+ * @param side Strona, dla której generowane są pozycje.
+ * @param neededCount Liczba potrzebnych pozycji.
+ * @return Lista wygenerowanych współrzędnych startowych.
+ */
 QVector<QPair<int, int>> UnitPlacementHelper::generateWeightedRandomPositions(Board& board,
                                                                               TeamSide side,
                                                                               int neededCount)
@@ -91,6 +129,19 @@ QVector<QPair<int, int>> UnitPlacementHelper::generateWeightedRandomPositions(Bo
     return candidates;
 }
 
+/**
+ * @brief Rozmieszcza jednostki jednej drużyny na planszy.
+ *
+ * Metoda tworzy jednostki zgodnie ze składem drużyny, dodaje je
+ * do obiektu drużyny, a następnie przypisuje do kolejnych
+ * dostępnych pozycji startowych.
+ *
+ * @param board Plansza gry.
+ * @param team Drużyna, której jednostki są rozmieszczane.
+ * @param comp Skład drużyny.
+ * @param side Strona, do której należy drużyna.
+ * @param positions Lista pozycji startowych.
+ */
 void UnitPlacementHelper::placeSingleTeam(Board& board,
                                           Team& team,
                                           const TeamComposition& comp,

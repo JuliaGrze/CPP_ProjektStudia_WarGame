@@ -1,6 +1,17 @@
 #include "teamconfigdialog.h"
 #include "ui_teamconfigdialog.h"
 
+/**
+ * @brief Konstruktor dialogu konfiguracji drużyny.
+ *
+ * Inicjalizuje interfejs, ustawia tytuł okna oraz ładuje
+ * początkowy skład drużyny. Podłącza również obsługę przycisków
+ * i zmian wartości w polach liczbowych.
+ *
+ * @param title Tytuł okna dialogowego.
+ * @param initialComposition Początkowa konfiguracja drużyny.
+ * @param parent Wskaźnik na widget nadrzędny.
+ */
 TeamConfigDialog::TeamConfigDialog(const QString& title,
                                    const TeamComposition& initialComposition,
                                    QWidget *parent)
@@ -26,11 +37,22 @@ TeamConfigDialog::TeamConfigDialog(const QString& title,
     connect(ui->medicSpinBox, &QSpinBox::valueChanged, this, [this](int) { updateTotalLabel(); });
 }
 
+/**
+ * @brief Destruktor dialogu konfiguracji drużyny.
+ */
 TeamConfigDialog::~TeamConfigDialog()
 {
     delete ui;
 }
 
+/**
+ * @brief Zwraca aktualnie ustawioną konfigurację drużyny.
+ *
+ * Odczytuje wartości z pól interfejsu użytkownika
+ * i tworzy obiekt TeamComposition.
+ *
+ * @return Aktualna konfiguracja drużyny.
+ */
 TeamComposition TeamConfigDialog::composition() const
 {
     TeamComposition result;
@@ -41,6 +63,12 @@ TeamComposition TeamConfigDialog::composition() const
     return result;
 }
 
+/**
+ * @brief Ładuje dane początkowe do formularza.
+ *
+ * Ustawia wartości pól na podstawie przekazanej
+ * konfiguracji początkowej.
+ */
 void TeamConfigDialog::loadData()
 {
     ui->infantrySpinBox->setValue(m_composition.infantry);
@@ -49,6 +77,11 @@ void TeamConfigDialog::loadData()
     ui->medicSpinBox->setValue(m_composition.medic);
 }
 
+/**
+ * @brief Aktualizuje etykietę z łączną liczbą jednostek.
+ *
+ * Oblicza sumę wszystkich jednostek i wyświetla ją w UI.
+ */
 void TeamConfigDialog::updateTotalLabel()
 {
     const int total =

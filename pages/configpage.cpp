@@ -8,6 +8,14 @@
 #include <QMessageBox>
 #include <QPushButton>
 
+/**
+ * @brief Konstruktor widoku konfiguracji gry.
+ *
+ * Inicjalizuje interfejs użytkownika, podłącza obsługę przycisków
+ * oraz ładuje dostępne opcje konfiguracji.
+ *
+ * @param parent Wskaźnik na widget nadrzędny.
+ */
 ConfigPage::ConfigPage(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::ConfigPage)
@@ -23,11 +31,20 @@ ConfigPage::ConfigPage(QWidget *parent)
     updateTeamSummaries();
 }
 
+/**
+ * @brief Destruktor widoku konfiguracji.
+ */
 ConfigPage::~ConfigPage()
 {
     delete ui;
 }
 
+/**
+ * @brief Ładuje dostępne opcje konfiguracji do interfejsu.
+ *
+ * Ustawia listy wariantów map i rozmiarów planszy
+ * oraz wybiera domyślne wartości początkowe.
+ */
 void ConfigPage::loadConfigurationOptions()
 {
     ui->cmbMap->setView(new QListView(this));
@@ -43,6 +60,12 @@ void ConfigPage::loadConfigurationOptions()
     ui->cmbMapSize->setCurrentText("20 x 20");
 }
 
+/**
+ * @brief Obsługuje kliknięcie konfiguracji drużyny gracza.
+ *
+ * Otwiera okno dialogowe konfiguracji i po zatwierdzeniu
+ * aktualizuje skład drużyny gracza.
+ */
 void ConfigPage::onPlayerTeamConfigClicked()
 {
     TeamConfigDialog dialog("Konfiguracja twojej drużyny", m_playerTeam, this);
@@ -54,6 +77,12 @@ void ConfigPage::onPlayerTeamConfigClicked()
     }
 }
 
+/**
+ * @brief Obsługuje kliknięcie konfiguracji drużyny przeciwnika.
+ *
+ * Otwiera okno dialogowe konfiguracji i po zatwierdzeniu
+ * aktualizuje skład drużyny przeciwnika.
+ */
 void ConfigPage::onEnemyTeamConfigClicked()
 {
     TeamConfigDialog dialog("Konfiguracja drużyny przeciwnej", m_enemyTeam, this);
@@ -65,12 +94,23 @@ void ConfigPage::onEnemyTeamConfigClicked()
     }
 }
 
+/**
+ * @brief Aktualizuje tekstowe podsumowanie obu drużyn w interfejsie.
+ */
 void ConfigPage::updateTeamSummaries()
 {
     ui->labelPlayerTeamSummary->setText(m_playerTeam.toDisplayString());
     ui->labelEnemyTeamSummary->setText(m_enemyTeam.toDisplayString());
 }
 
+/**
+ * @brief Odczytuje konfigurację gry z interfejsu użytkownika.
+ *
+ * Tworzy obiekt GameConfig na podstawie aktualnie wybranych
+ * ustawień mapy, rozmiaru planszy i składów drużyn.
+ *
+ * @return Zapisana konfiguracja gry.
+ */
 GameConfig ConfigPage::saveConfiguration() const
 {
     GameConfig config;
@@ -81,17 +121,34 @@ GameConfig ConfigPage::saveConfiguration() const
     return config;
 }
 
+/**
+ * @brief Zwraca aktualną konfigurację gry.
+ *
+ * @return Aktualna konfiguracja.
+ */
 GameConfig ConfigPage::getConfiguration() const
 {
     return saveConfiguration();
 }
 
+/**
+ * @brief Sprawdza podstawową poprawność konfiguracji gry.
+ *
+ * @return true, jeśli konfiguracja jest poprawna.
+ */
 bool ConfigPage::validateConfiguration() const
 {
     const GameConfig config = saveConfiguration();
     return config.isValid();
 }
 
+/**
+ * @brief Obsługuje kliknięcie przycisku rozpoczęcia gry.
+ *
+ * Metoda waliduje konfigurację. Jeśli konfiguracja jest niepoprawna,
+ * wyświetlane jest okno ostrzeżenia. W przeciwnym razie emitowany
+ * jest sygnał rozpoczęcia gry.
+ */
 void ConfigPage::onStartClicked()
 {
     const GameConfig config = saveConfiguration();

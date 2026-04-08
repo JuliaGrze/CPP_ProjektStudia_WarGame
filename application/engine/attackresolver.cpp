@@ -5,13 +5,37 @@
 #include <algorithm>
 #include <cmath>
 
+/**
+ * @brief Tworzy obiekt odpowiedzialny za rozstrzyganie ataków.
+ */
 AttackResolver::AttackResolver() = default;
 
+/**
+ * @brief Oblicza odległość pomiędzy dwoma polami planszy.
+ *
+ * Wykorzystuje metrykę Manhattan, czyli sumę bezwzględnych różnic
+ * współrzędnych X i Y.
+ *
+ * @param x1 Współrzędna X pierwszego pola.
+ * @param y1 Współrzędna Y pierwszego pola.
+ * @param x2 Współrzędna X drugiego pola.
+ * @param y2 Współrzędna Y drugiego pola.
+ * @return Odległość pomiędzy wskazanymi polami.
+ */
 int AttackResolver::calculateDistance(int x1, int y1, int x2, int y2) const
 {
     return std::abs(x1 - x2) + std::abs(y1 - y2);
 }
 
+/**
+ * @brief Zwraca premię obronną wynikającą z typu terenu.
+ *
+ * Niektóre rodzaje terenu zwiększają trudność trafienia jednostki,
+ * zapewniając jej dodatkową ochronę defensywną.
+ *
+ * @param terrain Typ terenu zajmowanego przez jednostkę broniącą się.
+ * @return Wartość premii obronnej dla danego terenu.
+ */
 int AttackResolver::calculateTerrainDefenseBonus(TerrainType terrain) const
 {
     switch (terrain)
@@ -29,6 +53,15 @@ int AttackResolver::calculateTerrainDefenseBonus(TerrainType terrain) const
     }
 }
 
+/**
+ * @brief Zwraca redukcję obrażeń wynikającą z typu terenu.
+ *
+ * Niektóre rodzaje terenu zmniejszają obrażenia otrzymywane
+ * przez jednostkę znajdującą się na danym polu.
+ *
+ * @param terrain Typ terenu zajmowanego przez jednostkę broniącą się.
+ * @return Wartość redukcji obrażeń dla danego terenu.
+ */
 int AttackResolver::calculateTerrainDamageReduction(TerrainType terrain) const
 {
     switch (terrain)
@@ -46,6 +79,27 @@ int AttackResolver::calculateTerrainDamageReduction(TerrainType terrain) const
     }
 }
 
+/**
+ * @brief Sprawdza, czy atak może zostać wykonany.
+ *
+ * Metoda weryfikuje, czy:
+ * - obie jednostki żyją,
+ * - atakujący może wykonać atak w bieżącej turze,
+ * - jednostki należą do przeciwnych stron,
+ * - cel znajduje się w dopuszczalnym zasięgu ataku.
+ *
+ * Dla jednostki atakującej stojącej na górze zasięg maksymalny
+ * zostaje zwiększony o 1.
+ *
+ * @param attacker Jednostka wykonująca atak.
+ * @param attackerX Współrzędna X atakującego.
+ * @param attackerY Współrzędna Y atakującego.
+ * @param defender Jednostka będąca celem ataku.
+ * @param defenderX Współrzędna X obrońcy.
+ * @param defenderY Współrzędna Y obrońcy.
+ * @param attackerTerrain Typ terenu zajmowanego przez atakującego.
+ * @return true, jeśli atak może zostać wykonany, w przeciwnym razie false.
+ */
 bool AttackResolver::canAttack(const Unit& attacker,
                                int attackerX,
                                int attackerY,
@@ -72,6 +126,26 @@ bool AttackResolver::canAttack(const Unit& attacker,
     return distance >= attacker.getMinRange() && distance <= maxRange;
 }
 
+/**
+ * @brief Oblicza procentową szansę trafienia celu.
+ *
+ * Szansa trafienia zależy od:
+ * - bazowej wartości trafienia,
+ * - celności atakującego,
+ * - uniku obrońcy,
+ * - premii obronnej wynikającej z terenu,
+ * - kary za dystans,
+ * - ewentualnej premii terenowej dla atakującego.
+ *
+ * Wynik końcowy jest ograniczany do przedziału od 15% do 95%.
+ *
+ * @param attacker Jednostka atakująca.
+ * @param defender Jednostka broniąca się.
+ * @param distance Odległość pomiędzy jednostkami.
+ * @param attackerTerrain Typ terenu zajmowanego przez atakującego.
+ * @param defenderTerrain Typ terenu zajmowanego przez obrońcę.
+ * @return Szansa trafienia wyrażona w procentach.
+ */
 int AttackResolver::calculateHitChance(const Unit& attacker,
                                        const Unit& defender,
                                        int distance,
@@ -91,8 +165,6 @@ int AttackResolver::calculateHitChance(const Unit& attacker,
     if (attackerTerrain == TerrainType::Mountain)
         attackerTerrainBonus = 5;
 
-    // Zgodnie z założeniem:
-    // hitChance = base + accuracy - defense - distance
     const int rawHitChance =
         baseChance
         + attackerAccuracy
@@ -104,6 +176,30 @@ int AttackResolver::calculateHitChance(const Unit& attacker,
     return std::clamp(rawHitChance, 15, 95);
 }
 
+/**
+ * @brief Rozstrzyga przebieg ataku i zwraca jego wynik.
+ *
+ * Metoda:
+ * - sprawdza możliwość wykonania ataku,
+ * - oblicza dystans i szansę trafienia,
+ * - wykonuje losowanie trafienia,
+ * - oblicza obrażenia z uwzględnieniem pancerza i terenu,
+ * - aktualizuje stan zdrowia obrońcy,
+ * - przygotowuje komunikat tekstowy opisujący wynik akcji.
+ *
+ * Dodatkowo atakujący zostaje oznaczony jako jednostka,
+ * która wykonała już akcję ataku.
+ *
+ * @param attacker Jednostka wykonująca atak.
+ * @param attackerX Współrzędna X atakującego.
+ * @param attackerY Współrzędna Y atakującego.
+ * @param attackerTerrain Typ terenu zajmowanego przez atakującego.
+ * @param defender Jednostka będąca celem ataku.
+ * @param defenderX Współrzędna X obrońcy.
+ * @param defenderY Współrzędna Y obrońcy.
+ * @param defenderTerrain Typ terenu zajmowanego przez obrońcę.
+ * @return Struktura zawierająca szczegółowy wynik ataku.
+ */
 AttackResult AttackResolver::resolveAttack(Unit& attacker,
                                            int attackerX,
                                            int attackerY,
@@ -130,7 +226,6 @@ AttackResult AttackResolver::resolveAttack(Unit& attacker,
 
     attacker.markActed();
 
-    // Trafienie, gdy rzut <= szansa
     if (result.roll > result.hitChance)
     {
         result.hit = false;

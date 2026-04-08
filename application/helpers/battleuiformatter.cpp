@@ -4,6 +4,15 @@
 #include "../models/tile.h"
 #include "../models/unit.h"
 
+/**
+ * @brief Zwraca nazwę terenu w formie tekstowej.
+ *
+ * Metoda konwertuje wartość wyliczeniową typu terenu
+ * na nazwę czytelną dla użytkownika.
+ *
+ * @param terrain Typ terenu.
+ * @return Nazwa terenu wyświetlana w interfejsie.
+ */
 QString BattleUiFormatter::terrainToDisplayName(TerrainType terrain)
 {
     switch (terrain)
@@ -18,6 +27,14 @@ QString BattleUiFormatter::terrainToDisplayName(TerrainType terrain)
     return "Nieznany";
 }
 
+/**
+ * @brief Buduje domyślny tekst informacji o polu.
+ *
+ * Tekst ten jest wyświetlany, gdy użytkownik nie zaznaczył
+ * jeszcze żadnego pola planszy.
+ *
+ * @return Domyślny komunikat informacyjny.
+ */
 QString BattleUiFormatter::buildDefaultTileInfoText()
 {
     return "Brak wybranego pola.\n"
@@ -25,6 +42,16 @@ QString BattleUiFormatter::buildDefaultTileInfoText()
            "aby zobaczyć informacje o terenie.";
 }
 
+/**
+ * @brief Buduje tekst opisujący wskazane pole planszy.
+ *
+ * Metoda przygotowuje tekst z podstawowymi informacjami
+ * o terenie, koszcie ruchu, osłonie, bonusie zasięgu
+ * oraz możliwości przejścia przez pole.
+ *
+ * @param tile Wskaźnik na pole planszy.
+ * @return Tekst opisujący pole planszy.
+ */
 QString BattleUiFormatter::buildTileInfoText(const Tile* tile)
 {
     if (!tile)
@@ -45,6 +72,19 @@ QString BattleUiFormatter::buildTileInfoText(const Tile* tile)
         .arg(walkableText);
 }
 
+/**
+ * @brief Buduje HTML z informacją o aktualnej turze.
+ *
+ * Jeśli gra została zakończona, metoda zwraca komunikat
+ * o końcu gry i zwycięzcy. W przeciwnym razie zwraca
+ * informację o numerze tury i aktywnej stronie.
+ *
+ * @param currentTurn Numer aktualnej tury.
+ * @param currentSide Aktualnie aktywna strona.
+ * @param gameFinished Informacja, czy gra została zakończona.
+ * @param winnerSide Strona zwycięska.
+ * @return Fragment HTML z informacją o turze.
+ */
 QString BattleUiFormatter::buildTurnInfoHtml(
     int currentTurn,
     TeamSide currentSide,
@@ -84,6 +124,23 @@ QString BattleUiFormatter::buildTurnInfoHtml(
         .arg(sideText);
 }
 
+/**
+ * @brief Buduje HTML z informacjami o obu drużynach.
+ *
+ * Metoda przygotowuje podsumowanie liczby jednostek,
+ * aktualnej strony, punktów akcji oraz statystyk trafień.
+ *
+ * @param playerCount Liczba jednostek drużyny gracza.
+ * @param enemyCount Liczba jednostek drużyny przeciwnika.
+ * @param currentSide Aktualnie aktywna strona.
+ * @param currentAp Aktualna liczba punktów akcji.
+ * @param maxAp Maksymalna liczba punktów akcji.
+ * @param playerStats Statystyki drużyny gracza.
+ * @param enemyStats Statystyki drużyny przeciwnika.
+ * @param playerAccuracy Skuteczność drużyny gracza.
+ * @param enemyAccuracy Skuteczność drużyny przeciwnika.
+ * @return Fragment HTML z informacjami o drużynach.
+ */
 QString BattleUiFormatter::buildTeamsInfoHtml(
     int playerCount,
     int enemyCount,
@@ -129,6 +186,11 @@ QString BattleUiFormatter::buildTeamsInfoHtml(
         .arg(enemyAccuracy);
 }
 
+/**
+ * @brief Buduje HTML informujący o braku zaznaczonej jednostki.
+ *
+ * @return Fragment HTML z komunikatem o braku wyboru.
+ */
 QString BattleUiFormatter::buildNoUnitSelectedNameHtml()
 {
     return
@@ -138,6 +200,16 @@ QString BattleUiFormatter::buildNoUnitSelectedNameHtml()
         "</div>";
 }
 
+/**
+ * @brief Buduje HTML ze statystykami wyświetlanymi przy braku wyboru jednostki.
+ *
+ * @param currentAp Aktualna liczba punktów akcji.
+ * @param maxAp Maksymalna liczba punktów akcji.
+ * @param currentTurn Numer aktualnej tury.
+ * @param playerStats Statystyki drużyny gracza.
+ * @param enemyStats Statystyki drużyny przeciwnika.
+ * @return Fragment HTML ze statystykami ogólnymi.
+ */
 QString BattleUiFormatter::buildNoUnitSelectedStatsHtml(
     int currentAp,
     int maxAp,
@@ -163,6 +235,15 @@ QString BattleUiFormatter::buildNoUnitSelectedStatsHtml(
         .arg(enemyStats.shotsFired);
 }
 
+/**
+ * @brief Buduje HTML z nazwą zaznaczonej jednostki.
+ *
+ * Oprócz nazwy jednostki wyświetlana jest również informacja
+ * o drużynie, do której jednostka należy.
+ *
+ * @param unit Wskaźnik na zaznaczoną jednostkę.
+ * @return Fragment HTML z nazwą jednostki.
+ */
 QString BattleUiFormatter::buildSelectedUnitNameHtml(const Unit* unit)
 {
     if (!unit)
@@ -184,6 +265,22 @@ QString BattleUiFormatter::buildSelectedUnitNameHtml(const Unit* unit)
         .arg(teamText);
 }
 
+/**
+ * @brief Buduje HTML ze szczegółowymi statystykami zaznaczonej jednostki.
+ *
+ * Metoda przygotowuje informacje o zdrowiu, ataku, zasięgu,
+ * ruchu, pancerzu, celności, unikach, leczeniu oraz liczbie
+ * dostępnych oznaczonych pól i aktualnych punktach akcji drużyny.
+ *
+ * @param unit Wskaźnik na zaznaczoną jednostkę.
+ * @param moveCount Liczba dostępnych pól ruchu.
+ * @param attackCount Liczba dostępnych celów ataku.
+ * @param healCount Liczba dostępnych celów leczenia.
+ * @param currentAp Aktualna liczba punktów akcji.
+ * @param maxAp Maksymalna liczba punktów akcji.
+ * @param currentTurn Numer aktualnej tury.
+ * @return Fragment HTML ze statystykami jednostki.
+ */
 QString BattleUiFormatter::buildSelectedUnitStatsHtml(
     const Unit* unit,
     int moveCount,
@@ -237,6 +334,15 @@ QString BattleUiFormatter::buildSelectedUnitStatsHtml(
         .arg(currentTurn);
 }
 
+/**
+ * @brief Buduje HTML z podsumowaniem po zakończeniu gry.
+ *
+ * Metoda przygotowuje rozbudowane podsumowanie wyników bitwy,
+ * zawierające zwycięzcę, liczbę tur oraz statystyki obu drużyn.
+ *
+ * @param gameState Końcowy stan gry.
+ * @return Fragment HTML z podsumowaniem rozgrywki.
+ */
 QString BattleUiFormatter::buildPostGameSummaryHtml(const GameState& gameState)
 {
     const TeamBattleStats playerStats = gameState.getStatsForSide(TeamSide::Player);

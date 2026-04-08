@@ -19,6 +19,19 @@
 #include "../application/helpers/battleuiformatter.h"
 #include "../config/gameconfig.h"
 
+/**
+ * @brief Konstruktor widoku bitwy.
+ *
+ * Inicjalizuje interfejs użytkownika oraz podłącza obsługę:
+ * - powrotu do menu,
+ * - kończenia tury,
+ * - wyświetlania logu bitwy.
+ *
+ * Dodatkowo ustawia początkowe informacje o turze, statystykach
+ * oraz danych pola planszy.
+ *
+ * @param parent Wskaźnik na widget nadrzędny.
+ */
 BattlePage::BattlePage(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::BattlePage)
@@ -67,11 +80,22 @@ BattlePage::BattlePage(QWidget *parent)
     updateTileInfo();
 }
 
+/**
+ * @brief Destruktor widoku bitwy.
+ */
 BattlePage::~BattlePage()
 {
     delete ui;
 }
 
+/**
+ * @brief Ustawia kontroler gry dla widoku bitwy.
+ *
+ * Metoda podłącza sygnał zmiany stanu gry do odświeżania widoku
+ * oraz resetuje flagę wyświetlenia okna podsumowania po grze.
+ *
+ * @param controller Wskaźnik na kontroler gry.
+ */
 void BattlePage::setController(GameController* controller)
 {
     if (m_controller)
@@ -94,6 +118,12 @@ void BattlePage::setController(GameController* controller)
                        });
 }
 
+/**
+ * @brief Przerysowuje planszę bitwy.
+ *
+ * Metoda korzysta z BattleBoardService do wygenerowania aktualnego
+ * widoku planszy na podstawie stanu gry i konfiguracji rozgrywki.
+ */
 void BattlePage::redrawBoard()
 {
     if (m_isDrawingBoard || !m_controller)
@@ -118,6 +148,12 @@ void BattlePage::redrawBoard()
     m_isDrawingBoard = false;
 }
 
+/**
+ * @brief Aktualizuje informacje o aktualnej turze.
+ *
+ * Wyświetla numer tury, aktywną stronę oraz informację
+ * o zakończeniu gry, jeśli rozgrywka dobiegła końca.
+ */
 void BattlePage::updateTurnInfo()
 {
     int currentTurn = 1;
@@ -144,6 +180,15 @@ void BattlePage::updateTurnInfo()
         );
 }
 
+/**
+ * @brief Odświeża statystyki i informacje wyświetlane w panelu bitwy.
+ *
+ * Metoda aktualizuje:
+ * - komunikat ostatniej akcji,
+ * - informacje o drużynach,
+ * - dane o zaznaczonej jednostce,
+ * - okno podsumowania po zakończeniu gry.
+ */
 void BattlePage::refreshStatistics()
 {
     if (!m_controller)
@@ -244,6 +289,14 @@ void BattlePage::refreshStatistics()
         );
 }
 
+/**
+ * @brief Wyświetla okno dialogowe z podsumowaniem po zakończeniu gry.
+ *
+ * Okno zawiera wynik bitwy oraz przyciski umożliwiające:
+ * - powrót do menu,
+ * - rozpoczęcie gry od nowa,
+ * - przejście do nowej konfiguracji.
+ */
 void BattlePage::showPostGameSummaryDialog()
 {
     if (!m_controller)
@@ -336,6 +389,14 @@ void BattlePage::showPostGameSummaryDialog()
     }
 }
 
+/**
+ * @brief Obsługuje kliknięcie pola planszy.
+ *
+ * Przekazuje współrzędne kliknięcia do kontrolera gry.
+ *
+ * @param x Współrzędna X klikniętego pola.
+ * @param y Współrzędna Y klikniętego pola.
+ */
 void BattlePage::onTileClicked(int x, int y)
 {
     if (!m_controller)
@@ -344,6 +405,11 @@ void BattlePage::onTileClicked(int x, int y)
     m_controller->handleTileClick(x, y);
 }
 
+/**
+ * @brief Aktualizuje informacje o aktualnie wybranym polu planszy.
+ *
+ * Jeśli żadne pole nie jest zaznaczone, wyświetlany jest komunikat domyślny.
+ */
 void BattlePage::updateTileInfo()
 {
     if (!m_controller)
@@ -368,18 +434,38 @@ void BattlePage::updateTileInfo()
     ui->labelTileInfo->setText(BattleUiFormatter::buildTileInfoText(tile));
 }
 
+/**
+ * @brief Obsługuje zmianę rozmiaru widoku bitwy.
+ *
+ * Po zmianie rozmiaru okna plansza jest rysowana ponownie.
+ *
+ * @param event Zdarzenie zmiany rozmiaru.
+ */
 void BattlePage::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
     QTimer::singleShot(0, this, [this]() { redrawBoard(); });
 }
 
+/**
+ * @brief Obsługuje wyświetlenie widoku bitwy.
+ *
+ * Po pokazaniu widoku plansza jest rysowana ponownie.
+ *
+ * @param event Zdarzenie pokazania widoku.
+ */
 void BattlePage::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     QTimer::singleShot(0, this, [this]() { redrawBoard(); });
 }
 
+/**
+ * @brief Odświeża cały widok bitwy.
+ *
+ * Aktualizuje informacje o turze, statystyki, dane pola
+ * oraz rysuje planszę na nowo.
+ */
 void BattlePage::refreshView()
 {
     updateTurnInfo();

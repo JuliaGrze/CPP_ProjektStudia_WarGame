@@ -13,19 +13,48 @@
 
 namespace
 {
+/**
+ * @brief Reprezentuje węzeł używany podczas wyznaczania kosztu ruchu.
+ *
+ * Struktura przechowuje współrzędne pola oraz łączny koszt
+ * dotarcia do tego pola od pozycji początkowej.
+ */
 struct MoveNode
 {
-    int x;
-    int y;
-    int spentCost;
+    int x;          ///< Współrzędna X pola.
+    int y;          ///< Współrzędna Y pola.
+    int spentCost;  ///< Łączny koszt dotarcia do pola.
 };
 
+/**
+ * @brief Tworzy tekstowy klucz dla współrzędnych pola.
+ *
+ * Funkcja pomocnicza używana przy zapamiętywaniu odwiedzonych pól
+ * i najniższych kosztów przejścia.
+ *
+ * @param x Współrzędna X pola.
+ * @param y Współrzędna Y pola.
+ * @return Klucz tekstowy w formacie „x_y”.
+ */
 QString makeKey(int x, int y)
 {
     return QString("%1_%2").arg(x).arg(y);
 }
 }
 
+/**
+ * @brief Sprawdza, czy jednostka może zostać zaznaczona.
+ *
+ * Jednostka może zostać wybrana tylko wtedy, gdy:
+ * - istnieje,
+ * - żyje,
+ * - należy do aktualnie aktywnej strony,
+ * - drużyna posiada jeszcze punkty akcji.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param unit Jednostka sprawdzana pod kątem możliwości zaznaczenia.
+ * @return true, jeśli jednostka może zostać zaznaczona, w przeciwnym razie false.
+ */
 bool BattleEngine::canSelectUnit(const GameState& gameState, const Unit* unit) const
 {
     if (!unit || !unit->isAlive())
@@ -40,11 +69,43 @@ bool BattleEngine::canSelectUnit(const GameState& gameState, const Unit* unit) c
     return true;
 }
 
+/**
+ * @brief Oblicza odległość pomiędzy dwoma polami planszy.
+ *
+ * Wykorzystuje metrykę Manhattan, czyli sumę bezwzględnych różnic
+ * współrzędnych X i Y.
+ *
+ * @param x1 Współrzędna X pierwszego pola.
+ * @param y1 Współrzędna Y pierwszego pola.
+ * @param x2 Współrzędna X drugiego pola.
+ * @param y2 Współrzędna Y drugiego pola.
+ * @return Odległość pomiędzy wskazanymi polami.
+ */
 int BattleEngine::calculateDistance(int x1, int y1, int x2, int y2) const
 {
     return std::abs(x1 - x2) + std::abs(y1 - y2);
 }
 
+/**
+ * @brief Oblicza najniższy koszt ruchu pomiędzy dwoma polami.
+ *
+ * Metoda wyszukuje najtańszą ścieżkę przejścia z pola początkowego
+ * do pola docelowego z uwzględnieniem:
+ * - kosztu ruchu terenu,
+ * - kosztu ruchu jednostki,
+ * - pól nieprzechodnich,
+ * - pól zajętych przez inne jednostki.
+ *
+ * Jeśli ścieżka nie istnieje, zwracana jest maksymalna wartość typu int.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param unit Jednostka, dla której obliczany jest koszt ruchu.
+ * @param startX Współrzędna X pola początkowego.
+ * @param startY Współrzędna Y pola początkowego.
+ * @param targetX Współrzędna X pola docelowego.
+ * @param targetY Współrzędna Y pola docelowego.
+ * @return Najniższy koszt ruchu lub std::numeric_limits<int>::max(), jeśli brak ścieżki.
+ */
 int BattleEngine::calculateLowestMoveCost(const GameState& gameState,
                                           const Unit& unit,
                                           int startX,
@@ -100,6 +161,22 @@ int BattleEngine::calculateLowestMoveCost(const GameState& gameState,
     return std::numeric_limits<int>::max();
 }
 
+/**
+ * @brief Wyznacza dostępne akcje dla wybranej jednostki.
+ *
+ * Metoda oblicza i zapisuje w stanie gry pola dostępne dla:
+ * - ruchu,
+ * - ataku,
+ * - leczenia,
+ * - pól zablokowanych.
+ *
+ * Wyniki te są później wykorzystywane do podświetlenia planszy
+ * i interpretacji kliknięć użytkownika.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param startX Współrzędna X wybranej jednostki.
+ * @param startY Współrzędna Y wybranej jednostki.
+ */
 void BattleEngine::calculateActionHighlights(GameState& gameState, int startX, int startY) const
 {
     QVector<QPair<int, int>> availablePositions;
@@ -250,6 +327,19 @@ void BattleEngine::calculateActionHighlights(GameState& gameState, int startX, i
     gameState.setHealablePositions(healablePositions);
 }
 
+/**
+ * @brief Próbuje wykonać ruch aktualnie zaznaczoną jednostką.
+ *
+ * Metoda sprawdza poprawność ruchu, dostępność ścieżki,
+ * koszt ruchu oraz liczbę dostępnych punktów akcji.
+ * W przypadku powodzenia aktualizuje pozycję jednostki,
+ * stan punktów akcji oraz komunikat dla użytkownika.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param targetX Współrzędna X pola docelowego.
+ * @param targetY Współrzędna Y pola docelowego.
+ * @return true, jeśli kliknięcie zostało obsłużone, w przeciwnym razie false.
+ */
 bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int targetY)
 {
     if (!gameState.hasSelectedPosition())
@@ -324,6 +414,11 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
     return true;
 }
 
+/**
+ * @brief Usuwa z pola jednostkę, która została zniszczona.
+ *
+ * @param tile Pole planszy, z którego ma zostać usunięta jednostka.
+ */
 void BattleEngine::clearDefeatedUnitFromTile(Tile& tile) const
 {
     Unit* unit = tile.getUnit();
@@ -331,6 +426,17 @@ void BattleEngine::clearDefeatedUnitFromTile(Tile& tile) const
         tile.removeUnit();
 }
 
+/**
+ * @brief Próbuje wykonać leczenie aktualnie zaznaczoną jednostką.
+ *
+ * Metoda sprawdza poprawność celu, zasięg leczenia, dostępność punktów akcji
+ * oraz możliwość wykonania tej akcji przez jednostkę.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param targetX Współrzędna X celu leczenia.
+ * @param targetY Współrzędna Y celu leczenia.
+ * @return true, jeśli kliknięcie zostało obsłużone, w przeciwnym razie false.
+ */
 bool BattleEngine::tryHealSelectedUnit(GameState& gameState, int targetX, int targetY)
 {
     if (!gameState.hasSelectedPosition())
@@ -392,6 +498,20 @@ bool BattleEngine::tryHealSelectedUnit(GameState& gameState, int targetX, int ta
     return true;
 }
 
+/**
+ * @brief Próbuje wykonać atak aktualnie zaznaczoną jednostką.
+ *
+ * Metoda sprawdza możliwość wykonania ataku, koszt punktów akcji,
+ * dostępność celu oraz rozstrzyga wynik starcia przy użyciu AttackResolver.
+ *
+ * W przypadku sukcesu aktualizowane są statystyki walki, stan jednostek,
+ * punkty akcji oraz komunikaty dla użytkownika.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param targetX Współrzędna X celu ataku.
+ * @param targetY Współrzędna Y celu ataku.
+ * @return true, jeśli kliknięcie zostało obsłużone, w przeciwnym razie false.
+ */
 bool BattleEngine::tryAttackSelectedUnit(GameState& gameState, int targetX, int targetY)
 {
     if (!gameState.hasSelectedPosition())
@@ -483,6 +603,20 @@ bool BattleEngine::tryAttackSelectedUnit(GameState& gameState, int targetX, int 
     return true;
 }
 
+/**
+ * @brief Sprawdza, czy wskazana jednostka ma dostępną jakąkolwiek akcję.
+ *
+ * Analizowane są możliwości:
+ * - ataku,
+ * - leczenia,
+ * - ruchu.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param x Współrzędna X jednostki.
+ * @param y Współrzędna Y jednostki.
+ * @param unit Jednostka poddawana analizie.
+ * @return true, jeśli jednostka może wykonać przynajmniej jedną akcję, w przeciwnym razie false.
+ */
 bool BattleEngine::unitHasAnyAvailableAction(const GameState& gameState, int x, int y, const Unit& unit) const
 {
     if (!unit.isAlive() || unit.getSide() != gameState.getCurrentSide())
@@ -580,6 +714,19 @@ bool BattleEngine::unitHasAnyAvailableAction(const GameState& gameState, int x, 
     return false;
 }
 
+/**
+ * @brief Zwraca komunikat wyjaśniający brak dostępnych akcji jednostki.
+ *
+ * Metoda analizuje stan jednostki, dostępne punkty akcji oraz możliwość
+ * wykonania ruchu, ataku i leczenia, a następnie przygotowuje komunikat
+ * opisujący przyczynę braku sensownej akcji.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param x Współrzędna X jednostki.
+ * @param y Współrzędna Y jednostki.
+ * @param unit Jednostka, której dotyczy analiza.
+ * @return Komunikat opisujący powód braku dostępnej akcji.
+ */
 QString BattleEngine::getUnitUnavailableReason(const GameState& gameState, int x, int y, const Unit& unit) const
 {
     if (!unit.isAlive())
@@ -719,6 +866,15 @@ QString BattleEngine::getUnitUnavailableReason(const GameState& gameState, int x
     return "Ta jednostka nie ma obecnie żadnej sensownej akcji do wykonania.";
 }
 
+/**
+ * @brief Sprawdza, czy aktywna drużyna ma jakąkolwiek dostępną akcję.
+ *
+ * Metoda przeszukuje wszystkie jednostki aktualnej strony i sprawdza,
+ * czy przynajmniej jedna z nich może wykonać ruch, atak lub leczenie.
+ *
+ * @param gameState Aktualny stan gry.
+ * @return true, jeśli istnieje dostępna akcja, w przeciwnym razie false.
+ */
 bool BattleEngine::hasAnyAvailableAction(const GameState& gameState) const
 {
     const Board& board = gameState.getBoard();
@@ -743,6 +899,18 @@ bool BattleEngine::hasAnyAvailableAction(const GameState& gameState) const
     return false;
 }
 
+/**
+ * @brief Kończy bieżącą akcję i w razie potrzeby kończy turę.
+ *
+ * Metoda sprawdza:
+ * - czy gra została już zakończona,
+ * - czy drużyna ma jeszcze punkty akcji,
+ * - czy istnieją jeszcze możliwe akcje do wykonania.
+ *
+ * Jeśli nie można wykonać kolejnych działań, tura kończy się automatycznie.
+ *
+ * @param gameState Aktualny stan gry.
+ */
 void BattleEngine::finishActionAndMaybeEndTurn(GameState& gameState)
 {
     if (gameState.updateVictoryState())
@@ -763,6 +931,21 @@ void BattleEngine::finishActionAndMaybeEndTurn(GameState& gameState)
     }
 }
 
+/**
+ * @brief Obsługuje kliknięcie pola planszy.
+ *
+ * Metoda interpretuje kliknięcie w zależności od aktualnego stanu gry:
+ * - wybór jednostki,
+ * - odznaczenie jednostki,
+ * - ruch,
+ * - atak,
+ * - leczenie,
+ * - zmiana wybranej jednostki.
+ *
+ * @param gameState Aktualny stan gry.
+ * @param x Współrzędna X klikniętego pola.
+ * @param y Współrzędna Y klikniętego pola.
+ */
 void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
 {
     if (gameState.isGameFinished())
@@ -881,6 +1064,14 @@ void BattleEngine::handleTileClick(GameState& gameState, int x, int y)
     tryAttackSelectedUnit(gameState, x, y);
 }
 
+/**
+ * @brief Kończy aktualną turę.
+ *
+ * Jeśli gra nie została zakończona, metoda przełącza turę
+ * na następną stronę konfliktu.
+ *
+ * @param gameState Aktualny stan gry.
+ */
 void BattleEngine::endTurn(GameState& gameState)
 {
     if (!gameState.isGameFinished())

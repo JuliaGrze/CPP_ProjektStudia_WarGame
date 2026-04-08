@@ -16,6 +16,12 @@
 
 namespace
 {
+/**
+ * @brief Zwraca ścieżkę do grafiki odpowiadającej typowi terenu.
+ *
+ * @param terrain Typ terenu.
+ * @return Ścieżka do pliku graficznego terenu.
+ */
 QString getTerrainPath(TerrainType terrain)
 {
     switch (terrain)
@@ -37,6 +43,14 @@ QString getTerrainPath(TerrainType terrain)
     return ":/icons/images/terrain/grass.png";
 }
 
+/**
+ * @brief Zwraca ścieżkę do ikony jednostki.
+ *
+ * Wybór grafiki zależy od typu jednostki oraz strony konfliktu.
+ *
+ * @param unit Wskaźnik na jednostkę.
+ * @return Ścieżka do pliku graficznego jednostki lub pusty tekst.
+ */
 QString getUnitIconPath(const Unit* unit)
 {
     if (!unit)
@@ -64,6 +78,14 @@ QString getUnitIconPath(const Unit* unit)
     return "";
 }
 
+/**
+ * @brief Czyści wszystkie elementy z układu siatki.
+ *
+ * Usuwa widgety oraz elementy layoutu używane do poprzedniego
+ * narysowania planszy.
+ *
+ * @param grid Układ siatki do wyczyszczenia.
+ */
 void clearGrid(QGridLayout* grid)
 {
     if (!grid)
@@ -78,6 +100,23 @@ void clearGrid(QGridLayout* grid)
     }
 }
 
+/**
+ * @brief Buduje arkusz stylów dla nakładki pola planszy.
+ *
+ * Styl zależy od aktualnego stanu pola, np.:
+ * - zaznaczenie,
+ * - dostępny ruch,
+ * - zablokowane pole,
+ * - cel ataku,
+ * - cel leczenia.
+ *
+ * @param isSelected Czy pole jest aktualnie zaznaczone.
+ * @param isAvailableMove Czy pole jest dostępne do ruchu.
+ * @param isBlockedMove Czy pole jest zablokowane.
+ * @param isAttackable Czy pole jest celem ataku.
+ * @param isHealable Czy pole jest celem leczenia.
+ * @return Arkusz stylów dla nakładki.
+ */
 QString buildOverlayStyle(bool isSelected,
                           bool isAvailableMove,
                           bool isBlockedMove,
@@ -124,6 +163,13 @@ QString buildOverlayStyle(bool isSelected,
                ).arg(borderStyle, backgroundStyle);
 }
 
+/**
+ * @brief Ustawia obraz na przycisku reprezentującym pole planszy.
+ *
+ * @param button Przycisk pola.
+ * @param imagePath Ścieżka do grafiki.
+ * @param tileSize Rozmiar pola planszy.
+ */
 void setButtonImage(QPushButton* button, const QString& imagePath, int tileSize)
 {
     if (!button)
@@ -141,6 +187,21 @@ void setButtonImage(QPushButton* button, const QString& imagePath, int tileSize)
 }
 }
 
+/**
+ * @brief Rysuje planszę bitwy w układzie siatki.
+ *
+ * Metoda tworzy przyciski reprezentujące pola planszy, ustawia ich wygląd
+ * na podstawie terenu i jednostek, nakłada oznaczenia dostępnych akcji
+ * oraz podłącza obsługę kliknięć.
+ *
+ * Układ planszy dopasowywany jest do rozmiaru kontenera.
+ *
+ * @param grid Układ siatki, do którego dodawane są pola.
+ * @param boardContainer Kontener planszy.
+ * @param gameState Aktualny stan gry.
+ * @param config Konfiguracja gry.
+ * @param onTileClicked Funkcja wywoływana po kliknięciu pola.
+ */
 void BattleBoardService::drawBoard(QGridLayout* grid,
                                    QWidget* boardContainer,
                                    const GameState& gameState,

@@ -3,6 +3,21 @@
 
 #include <algorithm>
 
+/**
+ * @brief Oblicza wartość obrażeń zadawanych obrońcy.
+ *
+ * Metoda wyznacza bazowe obrażenia na podstawie siły ataku jednostki
+ * atakującej, a następnie zmniejsza je w zależności od typu terenu,
+ * na którym znajduje się obrońca.
+ *
+ * Teren może zapewniać dodatkową ochronę, zmniejszając skuteczność ataku.
+ * Końcowa wartość obrażeń nie może być mniejsza niż 5.
+ *
+ * @param attacker Jednostka wykonująca atak.
+ * @param defender Jednostka będąca celem ataku.
+ * @param defenderTerrain Typ terenu zajmowanego przez obrońcę.
+ * @return Końcowa wartość obrażeń zadawanych obrońcy.
+ */
 int DefaultAttackStrategy::calculateDamage(const Unit& attacker,
                                            const Unit& defender,
                                            TerrainType defenderTerrain) const
