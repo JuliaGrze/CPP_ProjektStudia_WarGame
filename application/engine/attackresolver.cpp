@@ -28,58 +28,6 @@ int AttackResolver::calculateDistance(int x1, int y1, int x2, int y2) const
 }
 
 /**
- * @brief Zwraca premię obronną wynikającą z typu terenu.
- *
- * Niektóre rodzaje terenu zwiększają trudność trafienia jednostki,
- * zapewniając jej dodatkową ochronę defensywną.
- *
- * @param terrain Typ terenu zajmowanego przez jednostkę broniącą się.
- * @return Wartość premii obronnej dla danego terenu.
- */
-int AttackResolver::calculateTerrainDefenseBonus(TerrainType terrain) const
-{
-    switch (terrain)
-    {
-    case TerrainType::Forest:
-        return 10;
-    case TerrainType::Mountain:
-        return 8;
-    case TerrainType::Building:
-        return 12;
-    case TerrainType::Plain:
-    case TerrainType::Water:
-    default:
-        return 0;
-    }
-}
-
-/**
- * @brief Zwraca redukcję obrażeń wynikającą z typu terenu.
- *
- * Niektóre rodzaje terenu zmniejszają obrażenia otrzymywane
- * przez jednostkę znajdującą się na danym polu.
- *
- * @param terrain Typ terenu zajmowanego przez jednostkę broniącą się.
- * @return Wartość redukcji obrażeń dla danego terenu.
- */
-int AttackResolver::calculateTerrainDamageReduction(TerrainType terrain) const
-{
-    switch (terrain)
-    {
-    case TerrainType::Forest:
-        return 2;
-    case TerrainType::Mountain:
-        return 3;
-    case TerrainType::Building:
-        return 4;
-    case TerrainType::Plain:
-    case TerrainType::Water:
-    default:
-        return 0;
-    }
-}
-
-/**
  * @brief Sprawdza, czy atak może zostać wykonany.
  *
  * Metoda weryfikuje, czy:
@@ -88,8 +36,8 @@ int AttackResolver::calculateTerrainDamageReduction(TerrainType terrain) const
  * - jednostki należą do przeciwnych stron,
  * - cel znajduje się w dopuszczalnym zasięgu ataku.
  *
- * Dla jednostki atakującej stojącej na górze zasięg maksymalny
- * zostaje zwiększony o 1.
+ * Maksymalny zasięg jest wyznaczany dynamicznie na podstawie
+ * rzeczywistego typu jednostki atakującej i typu terenu.
  *
  * @param attacker Jednostka wykonująca atak.
  * @param attackerX Współrzędna X atakującego.
@@ -118,10 +66,7 @@ bool AttackResolver::canAttack(const Unit& attacker,
         return false;
 
     const int distance = calculateDistance(attackerX, attackerY, defenderX, defenderY);
-
-    int maxRange = attacker.getRange();
-    if (attackerTerrain == TerrainType::Mountain)
-        maxRange += 1;
+    const int maxRange = attacker.getRange() + attacker.getAttackRangeBonus(attackerTerrain);
 
     return distance >= attacker.getMinRange() && distance <= maxRange;
 }
@@ -135,7 +80,8 @@ bool AttackResolver::canAttack(const Unit& attacker,
  * - uniku obrońcy,
  * - premii obronnej wynikającej z terenu,
  * - kary za dystans,
- * - ewentualnej premii terenowej dla atakującego.
+ * - premii terenowej atakującego,
+ * - polimorficznego modyfikatora trafienia przeciw danemu celowi.
  *
  * Wynik końcowy jest ograniczany do przedziału od 15% do 95%.
  *
@@ -155,7 +101,8 @@ int AttackResolver::calculateHitChance(const Unit& attacker,
     const int baseChance = 50;
     const int attackerAccuracy = attacker.getAccuracy();
     const int defenderDefense = defender.getEvasion();
-    const int terrainDefense = calculateTerrainDefenseBonus(defenderTerrain);
+    const int terrainDefense = defender.getDefenseBonusOnTerrain(defenderTerrain);
+    const int attackerVsTargetModifier = attacker.getAttackAccuracyModifierAgainst(defender);
 
     int distancePenalty = distance * 5;
     if (distance <= 1)
@@ -171,7 +118,8 @@ int AttackResolver::calculateHitChance(const Unit& attacker,
         - defenderDefense
         - terrainDefense
         - distancePenalty
-        + attackerTerrainBonus;
+        + attackerTerrainBonus
+        + attackerVsTargetModifier;
 
     return std::clamp(rawHitChance, 15, 95);
 }
@@ -187,8 +135,8 @@ int AttackResolver::calculateHitChance(const Unit& attacker,
  * - aktualizuje stan zdrowia obrońcy,
  * - przygotowuje komunikat tekstowy opisujący wynik akcji.
  *
- * Dodatkowo atakujący zostaje oznaczony jako jednostka,
- * która wykonała już akcję ataku.
+ * W obliczeniach wykorzystywane są metody wirtualne klasy Unit,
+ * dzięki czemu zachowanie zależy od rzeczywistego typu jednostki.
  *
  * @param attacker Jednostka wykonująca atak.
  * @param attackerX Współrzędna X atakującego.
@@ -246,14 +194,14 @@ AttackResult AttackResolver::resolveAttack(Unit& attacker,
 
     result.hit = true;
 
-    result.baseDamage = attacker.getDamage();
+    result.baseDamage = attacker.getDamage() + attacker.getDamageModifierAgainst(defender);
     result.randomDamageBonus = QRandomGenerator::global()->bounded(-5, 6);
 
     const int armorAfterPiercing =
         std::max(0, defender.getArmor() - attacker.getArmorPiercing());
 
     result.defenderArmorUsed = armorAfterPiercing;
-    result.terrainReduction = calculateTerrainDamageReduction(defenderTerrain);
+    result.terrainReduction = defender.getDamageReductionOnTerrain(defenderTerrain);
 
     const int rawDamage =
         result.baseDamage

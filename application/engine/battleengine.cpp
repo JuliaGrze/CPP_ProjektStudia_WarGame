@@ -91,10 +91,13 @@ int BattleEngine::calculateDistance(int x1, int y1, int x2, int y2) const
  *
  * Metoda wyszukuje najtańszą ścieżkę przejścia z pola początkowego
  * do pola docelowego z uwzględnieniem:
- * - kosztu ruchu terenu,
- * - kosztu ruchu jednostki,
- * - pól nieprzechodnich,
+ * - kosztu ruchu zależnego od typu jednostki,
+ * - typu terenu,
+ * - pól niedostępnych dla danej jednostki,
  * - pól zajętych przez inne jednostki.
+ *
+ * Dzięki temu koszt ruchu jest obliczany dynamicznie na podstawie
+ * rzeczywistego typu obiektu klasy Unit.
  *
  * Jeśli ścieżka nie istnieje, zwracana jest maksymalna wartość typu int.
  *
@@ -137,13 +140,19 @@ int BattleEngine::calculateLowestMoveCost(const GameState& gameState,
                 continue;
 
             const Tile* nextTile = gameState.getBoard().getTile(nextX, nextY);
-            if (!nextTile || !nextTile->isWalkable())
+            if (!nextTile)
+                continue;
+
+            if (!unit.canEnterTerrain(nextTile->getTerrain()))
                 continue;
 
             if (nextTile->isOccupied() && !(nextX == targetX && nextY == targetY))
                 continue;
 
-            const int nextCost = current.spentCost + nextTile->getMovementCost() * unit.getMoveCostPerTile();
+            const int nextCost =
+                current.spentCost
+                + unit.getTerrainMoveCost(nextTile->getTerrain()) * unit.getMoveCostPerTile();
+
             const QString key = makeKey(nextX, nextY);
 
             if (bestCost.contains(key) && bestCost.value(key) <= nextCost)
@@ -172,6 +181,10 @@ int BattleEngine::calculateLowestMoveCost(const GameState& gameState,
  *
  * Wyniki te są później wykorzystywane do podświetlenia planszy
  * i interpretacji kliknięć użytkownika.
+ *
+ * W tym miejscu wykorzystywane są polimorficzne metody jednostki,
+ * dzięki czemu różne typy jednostek mogą mieć różne możliwości
+ * ruchu i leczenia.
  *
  * @param gameState Aktualny stan gry.
  * @param startX Współrzędna X wybranej jednostki.
@@ -226,7 +239,7 @@ void BattleEngine::calculateActionHighlights(GameState& gameState, int startX, i
 
                 const QString key = makeKey(nextX, nextY);
 
-                if (!nextTile->isWalkable())
+                if (!unit->canEnterTerrain(nextTile->getTerrain()))
                 {
                     if (!blockedSet.contains(key))
                     {
@@ -246,7 +259,10 @@ void BattleEngine::calculateActionHighlights(GameState& gameState, int startX, i
                     continue;
                 }
 
-                const int nextCost = current.spentCost + nextTile->getMovementCost() * unit->getMoveCostPerTile();
+                const int nextCost =
+                    current.spentCost
+                    + unit->getTerrainMoveCost(nextTile->getTerrain()) * unit->getMoveCostPerTile();
+
                 if (nextCost > maxAffordableCost)
                     continue;
 
@@ -308,15 +324,19 @@ void BattleEngine::calculateActionHighlights(GameState& gameState, int startX, i
                     continue;
 
                 const Unit* targetUnit = targetTile->getUnit();
-                if (!targetUnit || !targetUnit->isAlive() || targetUnit->getSide() != unit->getSide())
-                    continue;
-
-                if (!targetUnit->isDamaged())
+                if (!targetUnit)
                     continue;
 
                 const int distance = calculateDistance(startX, startY, x, y);
-                if (distance >= unit->getMinRange() && distance <= unit->getRange())
+                const int maxRange =
+                    unit->getRange() + unit->getAttackRangeBonus(startTile->getTerrain());
+
+                if (distance >= unit->getMinRange()
+                    && distance <= maxRange
+                    && unit->canHealTarget(*targetUnit))
+                {
                     healablePositions.append({ x, y });
+                }
             }
         }
     }
@@ -334,6 +354,9 @@ void BattleEngine::calculateActionHighlights(GameState& gameState, int startX, i
  * koszt ruchu oraz liczbę dostępnych punktów akcji.
  * W przypadku powodzenia aktualizuje pozycję jednostki,
  * stan punktów akcji oraz komunikat dla użytkownika.
+ *
+ * Możliwość wejścia na pole jest sprawdzana dynamicznie
+ * na podstawie typu jednostki.
  *
  * @param gameState Aktualny stan gry.
  * @param targetX Współrzędna X pola docelowego.
@@ -357,13 +380,19 @@ bool BattleEngine::tryMoveSelectedUnit(GameState& gameState, int targetX, int ta
 
     Tile* targetTile = gameState.getBoard().getTile(targetX, targetY);
 
-    if (!sourceTile || !targetTile || !sourceTile->isOccupied() || targetTile->isOccupied() || !targetTile->isWalkable())
+    if (!sourceTile || !targetTile || !sourceTile->isOccupied() || targetTile->isOccupied())
         return false;
 
     Unit* unit = sourceTile->getUnit();
     if (!unit || !unit->canMoveNow())
     {
         gameState.setLastActionMessage("Ta jednostka wykonała już ruch w tej turze.");
+        return true;
+    }
+
+    if (!unit->canEnterTerrain(targetTile->getTerrain()))
+    {
+        gameState.setLastActionMessage("Ta jednostka nie może wejść na to pole.");
         return true;
     }
 
@@ -432,6 +461,9 @@ void BattleEngine::clearDefeatedUnitFromTile(Tile& tile) const
  * Metoda sprawdza poprawność celu, zasięg leczenia, dostępność punktów akcji
  * oraz możliwość wykonania tej akcji przez jednostkę.
  *
+ * Możliwość leczenia celu jest sprawdzana dynamicznie przy użyciu
+ * metody wirtualnej klasy Unit.
+ *
  * @param gameState Aktualny stan gry.
  * @param targetX Współrzędna X celu leczenia.
  * @param targetY Współrzędna Y celu leczenia.
@@ -454,7 +486,7 @@ bool BattleEngine::tryHealSelectedUnit(GameState& gameState, int targetX, int ta
     if (!healer || !target || !healer->canHealNow() || !healer->canHeal())
         return false;
 
-    if (healer->getSide() != target->getSide())
+    if (!healer->canHealTarget(*target))
         return false;
 
     if (!gameState.isHealablePosition(targetX, targetY))
@@ -551,13 +583,16 @@ bool BattleEngine::tryAttackSelectedUnit(GameState& gameState, int targetX, int 
     }
 
     const int distance = calculateDistance(attackerTile->getX(), attackerTile->getY(), defenderTile->getX(), defenderTile->getY());
+    const int maxRange =
+        attacker->getRange() + attacker->getAttackRangeBonus(attackerTile->getTerrain());
+
     if (!gameState.isAttackablePosition(targetX, targetY))
     {
         gameState.setLastActionMessage(
             QString("Cel jest poza zasięgiem lub niedostępny. %1 atakuje na dystansie %2-%3 pól, a cel jest %4 pól dalej. Kliknij fioletowo oznaczonego przeciwnika.")
                 .arg(attacker->getName())
                 .arg(attacker->getMinRange())
-                .arg(attacker->getRange())
+                .arg(maxRange)
                 .arg(distance));
         return true;
     }
@@ -610,6 +645,10 @@ bool BattleEngine::tryAttackSelectedUnit(GameState& gameState, int targetX, int 
  * - ataku,
  * - leczenia,
  * - ruchu.
+ *
+ * W tej metodzie wykorzystywane są polimorficzne zachowania jednostki,
+ * dzięki czemu różne typy obiektów mogą mieć różne możliwości ruchu
+ * i leczenia mimo pracy przez interfejs klasy bazowej.
  *
  * @param gameState Aktualny stan gry.
  * @param x Współrzędna X jednostki.
@@ -674,18 +713,19 @@ bool BattleEngine::unitHasAnyAvailableAction(const GameState& gameState, int x, 
                     continue;
 
                 const Unit* targetUnit = targetTile->getUnit();
-                if (!targetUnit || !targetUnit->isAlive())
-                    continue;
-
-                if (targetUnit->getSide() != unit.getSide())
-                    continue;
-
-                if (!targetUnit->isDamaged())
+                if (!targetUnit)
                     continue;
 
                 const int distance = calculateDistance(x, y, targetX, targetY);
-                if (distance >= unit.getMinRange() && distance <= unit.getRange())
+                const int maxRange =
+                    unit.getRange() + unit.getAttackRangeBonus(unitTile->getTerrain());
+
+                if (distance >= unit.getMinRange()
+                    && distance <= maxRange
+                    && unit.canHealTarget(*targetUnit))
+                {
                     return true;
+                }
             }
         }
     }
@@ -697,7 +737,10 @@ bool BattleEngine::unitHasAnyAvailableAction(const GameState& gameState, int x, 
             for (int targetX = 0; targetX < board.getWidth(); ++targetX)
             {
                 const Tile* targetTile = board.getTile(targetX, targetY);
-                if (!targetTile || targetTile->isOccupied() || !targetTile->isWalkable())
+                if (!targetTile || targetTile->isOccupied())
+                    continue;
+
+                if (!unit.canEnterTerrain(targetTile->getTerrain()))
                     continue;
 
                 const int distance = calculateDistance(x, y, targetX, targetY);
@@ -791,14 +834,16 @@ QString BattleEngine::getUnitUnavailableReason(const GameState& gameState, int x
                     continue;
 
                 const Unit* targetUnit = targetTile->getUnit();
-                if (!targetUnit || !targetUnit->isAlive() || targetUnit->getSide() != unit.getSide())
-                    continue;
-
-                if (!targetUnit->isDamaged())
+                if (!targetUnit)
                     continue;
 
                 const int distance = calculateDistance(x, y, targetX, targetY);
-                if (distance >= unit.getMinRange() && distance <= unit.getRange())
+                const int maxRange =
+                    unit.getRange() + unit.getAttackRangeBonus(unitTile->getTerrain());
+
+                if (distance >= unit.getMinRange()
+                    && distance <= maxRange
+                    && unit.canHealTarget(*targetUnit))
                 {
                     hasHealTarget = true;
                     break;
@@ -816,7 +861,10 @@ QString BattleEngine::getUnitUnavailableReason(const GameState& gameState, int x
             for (int targetX = 0; targetX < board.getWidth(); ++targetX)
             {
                 const Tile* targetTile = board.getTile(targetX, targetY);
-                if (!targetTile || targetTile->isOccupied() || !targetTile->isWalkable())
+                if (!targetTile || targetTile->isOccupied())
+                    continue;
+
+                if (!unit.canEnterTerrain(targetTile->getTerrain()))
                     continue;
 
                 const int distance = calculateDistance(x, y, targetX, targetY);

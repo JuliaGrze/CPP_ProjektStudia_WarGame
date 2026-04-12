@@ -1,4 +1,5 @@
 #include "unit.h"
+
 #include <algorithm>
 
 /**
@@ -15,7 +16,7 @@
  * @param maxRange Maksymalny zasięg ataku.
  * @param movementPoints Maksymalna liczba pól ruchu.
  * @param attackCost Koszt ataku w punktach akcji.
- * @param moveCostPerTile Koszt ruchu za jedno pole.
+ * @param moveCostPerTile Bazowy koszt ruchu za jedno pole.
  * @param armor Wartość pancerza jednostki.
  * @param accuracy Celność jednostki.
  * @param evasion Unik jednostki.
@@ -154,9 +155,9 @@ int Unit::getAttackCost() const
 }
 
 /**
- * @brief Zwraca koszt ruchu za jedno pole.
+ * @brief Zwraca bazowy koszt ruchu za jedno pole.
  *
- * @return Koszt ruchu na pole.
+ * @return Bazowy koszt ruchu na pole.
  */
 int Unit::getMoveCostPerTile() const
 {
@@ -364,4 +365,166 @@ void Unit::resetTurnResources()
 {
     m_hasMovedThisTurn = false;
     m_hasActedThisTurn = false;
+}
+
+/**
+ * @brief Sprawdza, czy jednostka może wejść na teren danego typu.
+ *
+ * Domyślnie każda jednostka może wejść na wszystkie pola
+ * poza wodą.
+ *
+ * @param terrain Typ terenu.
+ * @return true, jeśli wejście na pole jest dozwolone.
+ */
+bool Unit::canEnterTerrain(TerrainType terrain) const
+{
+    return terrain != TerrainType::Water;
+}
+
+/**
+ * @brief Zwraca domyślny koszt wejścia na pole danego typu.
+ *
+ * Metoda stanowi bazowe zachowanie dla wszystkich jednostek.
+ * Klasy pochodne mogą ją nadpisać, jeśli poruszają się
+ * inaczej po konkretnych terenach.
+ *
+ * @param terrain Typ terenu.
+ * @return Koszt ruchu.
+ */
+int Unit::getTerrainMoveCost(TerrainType terrain) const
+{
+    switch (terrain)
+    {
+    case TerrainType::Plain:
+        return 1;
+    case TerrainType::Forest:
+        return 2;
+    case TerrainType::Mountain:
+        return 3;
+    case TerrainType::Building:
+        return 2;
+    case TerrainType::Water:
+    default:
+        return 9999;
+    }
+}
+
+/**
+ * @brief Zwraca domyślną premię do zasięgu ataku wynikającą z terenu.
+ *
+ * Domyślnie jednostka stojąca na górze zyskuje premię do zasięgu.
+ *
+ * @param terrain Typ terenu zajmowanego przez atakującego.
+ * @return Premia do maksymalnego zasięgu ataku.
+ */
+int Unit::getAttackRangeBonus(TerrainType terrain) const
+{
+    if (terrain == TerrainType::Mountain)
+        return 1;
+
+    return 0;
+}
+
+/**
+ * @brief Zwraca dodatkowy modyfikator trafienia przeciw wskazanemu obrońcy.
+ *
+ * Domyślna implementacja nie wprowadza dodatkowej premii ani kary.
+ *
+ * @param defender Jednostka będąca celem ataku.
+ * @return Modyfikator trafienia.
+ */
+int Unit::getAttackAccuracyModifierAgainst(const Unit& defender) const
+{
+    Q_UNUSED(defender);
+    return 0;
+}
+
+/**
+ * @brief Zwraca dodatkowy modyfikator obrażeń przeciw wskazanemu obrońcy.
+ *
+ * Domyślna implementacja nie wprowadza dodatkowej premii ani kary.
+ *
+ * @param defender Jednostka będąca celem ataku.
+ * @return Modyfikator obrażeń.
+ */
+int Unit::getDamageModifierAgainst(const Unit& defender) const
+{
+    Q_UNUSED(defender);
+    return 0;
+}
+
+/**
+ * @brief Zwraca premię obronną wynikającą z terenu.
+ *
+ * Domyślna implementacja opisuje bazowe zasady osłony terenowej.
+ *
+ * @param terrain Typ terenu zajmowanego przez jednostkę.
+ * @return Premia obronna.
+ */
+int Unit::getDefenseBonusOnTerrain(TerrainType terrain) const
+{
+    switch (terrain)
+    {
+    case TerrainType::Forest:
+        return 10;
+    case TerrainType::Mountain:
+        return 8;
+    case TerrainType::Building:
+        return 12;
+    case TerrainType::Plain:
+    case TerrainType::Water:
+    default:
+        return 0;
+    }
+}
+
+/**
+ * @brief Zwraca redukcję obrażeń wynikającą z terenu.
+ *
+ * Domyślna implementacja opisuje bazowe zasady ochrony terenowej.
+ *
+ * @param terrain Typ terenu zajmowanego przez jednostkę.
+ * @return Redukcja obrażeń.
+ */
+int Unit::getDamageReductionOnTerrain(TerrainType terrain) const
+{
+    switch (terrain)
+    {
+    case TerrainType::Forest:
+        return 2;
+    case TerrainType::Mountain:
+        return 3;
+    case TerrainType::Building:
+        return 4;
+    case TerrainType::Plain:
+    case TerrainType::Water:
+    default:
+        return 0;
+    }
+}
+
+/**
+ * @brief Sprawdza, czy jednostka może leczyć wskazany cel.
+ *
+ * Domyślna implementacja pozwala leczyć tylko sojusznika,
+ * który żyje i ma niepełne zdrowie.
+ *
+ * @param target Jednostka docelowa.
+ * @return true, jeśli leczenie jest możliwe.
+ */
+bool Unit::canHealTarget(const Unit& target) const
+{
+    if (!m_canHeal)
+        return false;
+
+    if (target.getSide() != m_side)
+        return false;
+
+    if (!target.isAlive())
+        return false;
+
+    if (!target.isDamaged())
+        return false;
+
+    return true;
 }

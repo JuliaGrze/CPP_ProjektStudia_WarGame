@@ -23,7 +23,7 @@ struct AttackResult
     int hitChance = 0;              ///< Obliczona szansa trafienia w procentach.
     int roll = 0;                   ///< Wylosowana wartość użyta do sprawdzenia trafienia.
 
-    int baseDamage = 0;             ///< Bazowa wartość obrażeń.
+    int baseDamage = 0;             ///< Bazowa wartość obrażeń po uwzględnieniu modyfikatora jednostki.
     int randomDamageBonus = 0;      ///< Dodatkowa losowa premia do obrażeń.
     int defenderArmorUsed = 0;      ///< Wartość pancerza wykorzystana przy obronie.
     int terrainReduction = 0;       ///< Redukcja obrażeń wynikająca z terenu.
@@ -42,8 +42,14 @@ struct AttackResult
  * - sprawdzaniem, czy atak jest możliwy,
  * - obliczaniem dystansu,
  * - wyznaczaniem szansy trafienia,
- * - uwzględnianiem wpływu terenu,
  * - obliczaniem końcowych obrażeń.
+ *
+ * Klasa korzysta z dynamicznego polimorfizmu klasy Unit,
+ * dzięki czemu różne typy jednostek mogą wpływać na:
+ * - zasięg ataku,
+ * - celność przeciw konkretnym celom,
+ * - modyfikator obrażeń,
+ * - premię obronną i redukcję obrażeń wynikającą z terenu.
  */
 class AttackResolver
 {
@@ -58,6 +64,9 @@ public:
      *
      * Metoda analizuje parametry atakującego i obrońcy,
      * ich pozycje na planszy oraz teren zajmowany przez atakującego.
+     *
+     * Maksymalny zasięg ataku może zostać dynamicznie zmodyfikowany
+     * przez konkretną klasę jednostki atakującej.
      *
      * @param attacker Jednostka wykonująca atak.
      * @param attackerX Współrzędna X atakującego.
@@ -81,6 +90,9 @@ public:
      *
      * Metoda oblicza dystans, szansę trafienia, wynik losowania,
      * końcowe obrażenia oraz aktualizuje stan obrońcy.
+     *
+     * W obliczeniach wykorzystywane są metody wirtualne klasy Unit,
+     * dzięki czemu zachowanie zależy od rzeczywistego typu jednostki.
      *
      * @param attacker Jednostka wykonująca atak.
      * @param attackerX Współrzędna X atakującego.
@@ -116,8 +128,9 @@ private:
     /**
      * @brief Oblicza szansę trafienia celu.
      *
-     * Uwzględnia parametry jednostek, odległość oraz wpływ terenu
-     * atakującego i obrońcy.
+     * Uwzględnia parametry jednostek, odległość, wpływ terenu
+     * oraz polimorficzne modyfikatory zależne od typu atakującego
+     * i obrońcy.
      *
      * @param attacker Jednostka atakująca.
      * @param defender Jednostka broniąca się.
@@ -131,22 +144,6 @@ private:
                            int distance,
                            TerrainType attackerTerrain,
                            TerrainType defenderTerrain) const;
-
-    /**
-     * @brief Zwraca premię obronną wynikającą z terenu.
-     *
-     * @param terrain Typ terenu.
-     * @return Wartość premii obronnej dla danego terenu.
-     */
-    int calculateTerrainDefenseBonus(TerrainType terrain) const;
-
-    /**
-     * @brief Zwraca redukcję obrażeń wynikającą z terenu.
-     *
-     * @param terrain Typ terenu.
-     * @return Wartość redukcji obrażeń dla danego terenu.
-     */
-    int calculateTerrainDamageReduction(TerrainType terrain) const;
 };
 
 #endif // ATTACKRESOLVER_H
