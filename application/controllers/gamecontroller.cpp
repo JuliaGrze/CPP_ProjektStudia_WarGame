@@ -18,11 +18,10 @@ GameController::GameController(QObject* parent)
 /**
  * @brief Rozpoczyna nową rozgrywkę.
  *
- * Tworzy stan gry na podstawie przekazanej konfiguracji,
+ * Metoda tworzy stan gry na podstawie przekazanej konfiguracji,
  * resetuje punkty akcji oraz jednostki dla aktualnej tury,
- * a następnie ustawia komunikat startowy.
- *
- * Jeśli pierwsza tura należy do przeciwnika, wywoływana jest jego logika.
+ * ustawia komunikat startowy, a następnie uruchamia kontroler
+ * odpowiedzialny za stronę rozpoczynającą grę.
  *
  * @param config Konfiguracja gry.
  */
@@ -30,34 +29,92 @@ void GameController::startGame(const GameConfig& config)
 {
     m_config = config;
     m_state = GameSetupService::createGame(config);
+
     m_state.resetTurnActionPoints();
     m_state.resetCurrentSideUnitsForTurn();
     m_state.setLastActionMessage(
-        QString("Rozpoczęła się tura Niebieskich. AP drużyny: %1. Wybierz jednostkę, potem pole ruchu, sojusznika do leczenia albo przeciwnika.")
+        QString("Rozpoczęła się tura Niebieskich. AP drużyny: %1. "
+                "Wybierz jednostkę, potem pole ruchu, sojusznika do leczenia albo przeciwnika.")
             .arg(m_state.getCurrentTurnActionPoints()));
 
-    processAiTurnIfNeeded();
+    processCurrentTurn();
     emit stateChanged();
 }
 
 /**
- * @brief Obsługuje turę gracza sterowanego automatycznie.
+ * @brief Zwraca kontroler odpowiedzialny za aktualną stronę konfliktu.
  *
- * Metoda wykonuje kolejne akcje przeciwnika do momentu:
- * - zakończenia gry,
- * - zmiany aktywnej strony.
- *
- * Po każdej akcji sprawdzany jest stan gry oraz to,
- * czy przeciwnik nadal ma turę.
+ * @return Wskaźnik na aktywny kontroler.
  */
-void GameController::processAiTurnIfNeeded()
+IPlayerController* GameController::getCurrentController()
+{
+    if (m_state.getCurrentSide() == TeamSide::Player)
+        return &m_humanController;
+
+    return &m_aiController;
+}
+
+/**
+ * @brief Zwraca kontroler odpowiedzialny za aktualną stronę konfliktu.
+ *
+ * @return Wskaźnik na aktywny kontroler.
+ */
+const IPlayerController* GameController::getCurrentController() const
+{
+    if (m_state.getCurrentSide() == TeamSide::Player)
+        return &m_humanController;
+
+    return &m_aiController;
+}
+
+/**
+ * @brief Uruchamia kontroler aktualnej strony konfliktu.
+ *
+ * Metoda wykorzystuje polimorfizm interfejsu IPlayerController
+ * i wywołuje performTurn(...) na kontrolerze przypisanym
+ * do aktualnej strony konfliktu.
+ *
+ * Dla HumanController metoda nie wykonuje automatycznych działań,
+ * ponieważ ruchy gracza są realizowane przez kliknięcia w interfejsie.
+ * Dla AIController metoda inicjuje automatyczne decyzje przeciwnika.
+ */
+void GameController::processCurrentTurn()
+{
+    if (m_state.isGameFinished())
+        return;
+
+    IPlayerController* controller = getCurrentController();
+    if (!controller)
+        return;
+
+    controller->performTurn(m_state, m_engine);
+
+    processAiTurnLoopIfNeeded();
+}
+
+/**
+ * @brief Obsługuje kolejne akcje AI, dopóki trwa tura przeciwnika.
+ *
+ * Metoda wykonuje logikę AI wielokrotnie aż do momentu:
+ * - zakończenia gry,
+ * - zmiany aktywnej strony,
+ * - wyczerpania działań przeciwnika.
+ *
+ * Dzięki temu cała tura przeciwnika może zostać rozegrana automatycznie
+ * bez udziału użytkownika.
+ */
+void GameController::processAiTurnLoopIfNeeded()
 {
     if (m_state.isGameFinished())
         return;
 
     while (!m_state.isGameFinished() && m_state.getCurrentSide() == TeamSide::Enemy)
     {
-        m_aiController.performTurn(m_state, m_engine);
+        IPlayerController* controller = getCurrentController();
+        if (!controller)
+            return;
+
+        controller->performTurn(m_state, m_engine);
 
         if (m_state.isGameFinished())
             return;
@@ -70,8 +127,10 @@ void GameController::processAiTurnIfNeeded()
 /**
  * @brief Obsługuje kliknięcie pola planszy przez użytkownika.
  *
- * Przekazuje zdarzenie do silnika gry, a następnie uruchamia
- * ewentualną turę przeciwnika i informuje interfejs o zmianie stanu.
+ * Kliknięcia mają znaczenie tylko podczas tury gracza sterowanego ręcznie.
+ * W takim przypadku metoda przekazuje zdarzenie do silnika walki,
+ * a następnie – jeśli aktywna strona się zmieni – uruchamia odpowiedni
+ * kontroler dla kolejnej tury.
  *
  * @param x Współrzędna X klikniętego pola.
  * @param y Współrzędna Y klikniętego pola.
@@ -81,16 +140,19 @@ void GameController::handleTileClick(int x, int y)
     if (m_state.isGameFinished())
         return;
 
+    if (m_state.getCurrentSide() != TeamSide::Player)
+        return;
+
     m_engine.handleTileClick(m_state, x, y);
-    processAiTurnIfNeeded();
+    processCurrentTurn();
     emit stateChanged();
 }
 
 /**
  * @brief Kończy aktualną turę.
  *
- * Przełącza stronę aktywną, uruchamia ewentualną turę przeciwnika
- * oraz informuje interfejs użytkownika o zmianie stanu gry.
+ * Metoda przełącza stronę aktywną, a następnie uruchamia kontroler
+ * odpowiedzialny za nową turę.
  */
 void GameController::endTurn()
 {
@@ -98,7 +160,7 @@ void GameController::endTurn()
         return;
 
     m_engine.endTurn(m_state);
-    processAiTurnIfNeeded();
+    processCurrentTurn();
     emit stateChanged();
 }
 
